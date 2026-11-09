@@ -78,9 +78,9 @@ body{touch-action:manipulation}
  #opps{display:none!important}
  .side{flex-direction:column;gap:6px}.side canvas{width:60px}
  body.ingame{position:fixed;left:0;right:0;top:0;bottom:0;width:100%;height:100%;height:100dvh;overflow:hidden;overscroll-behavior:none;padding:6px 8px 0}
- #chatbtn{display:flex;align-items:center;justify-content:center;position:fixed;right:10px;bottom:12px;z-index:7;width:42px;height:42px;padding:0;border-radius:50%;font-size:20px;background:#2b2e36;border:1px solid #555;box-shadow:0 3px 0 #15161a}
+ body #chatbtn{display:flex;align-items:center;justify-content:center;position:fixed;right:10px;bottom:12px;z-index:7;width:42px;height:42px;padding:0;border-radius:50%;font-size:20px;background:#2b2e36;border:1px solid #555;box-shadow:0 3px 0 #15161a}
  #chatbtn.unread::after{content:'';position:absolute;top:2px;right:2px;width:10px;height:10px;border-radius:50%;background:#e5484d}
- body.ingame #chatbtn{bottom:calc(184px + env(safe-area-inset-bottom,0px))}
+ body.ingame #chatbtn{bottom:auto}
  #chat{display:none!important}body.chatopen #chat{display:flex!important;bottom:64px}
  body.chatopen.ingame #chat{bottom:calc(236px + env(safe-area-inset-bottom,0px))}
  #pad{will-change:transform;transform:translateZ(0);-webkit-transform:translateZ(0)}
@@ -132,6 +132,9 @@ html{min-height:100%;background-color:#131313;background-image:linear-gradient(2
 .rbar{margin-top:10px;padding-top:10px;border-top:1px solid var(--bd)}
 details.opts{margin-top:12px;border:1px solid var(--bd);border-radius:10px;padding:8px 12px;background:rgba(255,255,255,.04)}details.opts summary{cursor:pointer;font-weight:600}
 #chatbtn{display:none}
+@keyframes flr{0%,40%,80%{background:#ff2a35;box-shadow:0 0 30px 8px #ff2a35}20%,60%{background:#6e0d14;box-shadow:0 0 6px #6e0d14}99%{background:#ff2a35}}
+@keyframes flg{0%,40%,80%{background:#22d65a;box-shadow:0 0 30px 8px #22d65a}20%,60%{background:#0d5a25;box-shadow:0 0 6px #0d5a25}99%{background:#22d65a}}
+#stage.fr{animation:flr 1.1s linear}#stage.fg{animation:flg 1.1s linear}
 html:has(body.ingame){overflow:hidden}
 #pcard{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:9;width:min(320px,92vw);box-shadow:0 8px 30px rgba(0,0,0,.5)}
 #log b[title]{text-decoration:underline dotted}
@@ -185,7 +188,7 @@ h1{text-align:center}#logo{margin:0 auto 6px}
   <div><b>Grey rows</b>Garbage rows never clear from normal line clears. Only a 4 line Blockfight removes one.</div>
   <div><b>Powers</b>Every 5 lines sends 1 garbage row to a random opponent (2 rows from a phone). A 4 line Blockfight hits everyone with a row plus a random bonus: an extra row, or a flipped board with reversed controls for 8 seconds. It also clears a pure grey garbage row from your own stack. Making two Blockfights in a row also scrambles every opponent's board.</div>
   <div><b>Speed</b>Blocks fall faster every 20 seconds, and the timer flashes when it happens.</div>
-  <div><b>Rooms</b>The first player in is the host and starts the game. With 3 or more players anyone can call a vote kick.</div>
+  <div><b>Rooms</b>The first player in is the host and starts the game. With 4 or more players anyone can call a vote kick.</div>
  </div>
 </details>
 </section>
@@ -398,8 +401,11 @@ function settle(){if(!pending||!room)return;if(peerList.filter(valid0).length>=8
 function admit(lock){if(!room||!pending)return;pending=false;needPw=false;const patch={joined:Date.now()};if(lock)patch.lock=lock;if(myAv)patch.av=myAv;room.presence(patch).catch(()=>{});$("#cin").disabled=false;$("#csend").disabled=false;$("#cin").placeholder="Say something to the room";chatLine("Room","You are in “"+curCode+"”. Say hi!");msg("In room “"+curCode+"”. The first person in is the host.");renderLobby()}
 function targets(){return peerList.filter(p=>!p.isMe&&p.presence&&p.presence.st==="play")}
 function send(kind,n,pw,all,fx){
- if(mode==="solo"){const t=bots.filter(b=>b.st==="play");if(!t.length)return false;const L=all?t:[t[rnd(t.length)]];L.forEach(b=>{botHit(b,kind,n+(fx==="extra"?1:0));flyAttack($("#stage"),elFor(b.id))});if(pw){logPower("You",(kind==="rows"?"Add rows":"Scramble")+(fx==="extra"?" + extra row":""),all?"everyone":L[0].n,myNick(),all?null:L[0].n);toast("⚡ You used "+(kind==="rows"?"Add rows":"Scramble")+" on "+(all?"everyone":L[0].n));sfx("power")}return true}
- const t=targets();if(!room||!t.length)return false;for(const p of(all?t:[t[rnd(t.length)]]))room.emit("attack",{to:p.peer,kind,n,pw:pw?1:0,all:all?1:0,fx:fx||"",from:$("#nick").value||"Player"}).catch(()=>{});return true}
+ if(mode==="solo"){const t=bots.filter(b=>b.st==="play");if(!t.length)return false;const L=all?t:[t[rnd(t.length)]];L.forEach(b=>{botHit(b,kind,n+(fx==="extra"?1:0));flyAttack($("#stage"),elFor(b.id))});if(pw){flashB("fg");logPower("You",(kind==="rows"?"Add rows":"Scramble")+(fx==="extra"?" + extra row":""),all?"everyone":L[0].n,myNick(),all?null:L[0].n);toast("⚡ You used "+(kind==="rows"?"Add rows":"Scramble")+" on "+(all?"everyone":L[0].n));sfx("power")}return true}
+ const t=targets();if(!room||!t.length)return false;for(const p of(all?t:[t[rnd(t.length)]]))room.emit("attack",{to:p.peer,kind,n,pw:pw?1:0,all:all?1:0,fx:fx||"",from:$("#nick").value||"Player"}).catch(()=>{});if(pw)flashB("fg");return true}
+function flashB(c){if(!matchMedia("(max-width:700px)").matches||gvEl.hidden)return;const e=$("#stage");e.classList.remove("fr","fg");void e.offsetWidth;e.classList.add(c);setTimeout(()=>e.classList.remove(c),1200)}
+function posChat(){const b=$("#chatbtn");if(!matchMedia("(max-width:700px)").matches)return;if(gvEl.hidden){b.style.left=b.style.top="";return}const r=$("#stage").getBoundingClientRect();if(!r.width)return;b.style.left=Math.min(innerWidth-48,r.right+6)+"px";b.style.top=Math.max(4,r.bottom-42)+"px";b.style.right="auto";b.style.bottom="auto"}
+setInterval(posChat,400);addEventListener("resize",posChat);
 function autoPower(all,fx){const mob=matchMedia("(max-width:700px)").matches;if(!send("rows",mob?2:1,1,all,fx))toast("⚡ Add rows fizzled, no opponent to hit")}
 function pub(){if(!room)return;dirty=false;let b=g.map(r=>r.slice());if(!over)cur.m.forEach((r,j)=>r.forEach((v,i)=>{const y=cur.y+j;if(v&&y>=0)b[y][cur.x+i]=v}));
  room.presence({board:b.map(r=>r.join("")).join(""),score,lines,st:over?(won?"win":"dead"):"play"}).catch(()=>{})}
@@ -447,7 +453,7 @@ function lobbySig(){const ps=peerList.filter(valid).sort(byJ);return JSON.string
 function renderLobby(){renderTimer();const sig=lobbySig();if(sig===lastSig)return;lastSig=sig;buildLobby()}
 function buildLobby(){$("#plist").textContent="";let can=false,wait="";$("#invrow").hidden=true;$("#privrow").hidden=true;$("#pwrow").hidden=true;$("#ropts").hidden=true;$("#botsel").hidden=mode!=="solo";$("#avrow").hidden=mode==="idle"||pending;
  if(mode==="room"){const ad=admin(),im=ad===myPeer,busy=peerList.some(p=>p.presence&&p.presence.st==="play"),ps=peerList.filter(valid).sort(byJ);
-  ps.forEach(p=>{let k=null;if(p.peer!==myPeer&&ps.length>=3){k=document.createElement("button");k.className="alt";k.textContent="Vote kick";k.disabled=!!vt||Date.now()<vtCool;k.onclick=()=>voteOpen(p.peer)}
+  ps.forEach(p=>{let k=null;if(p.peer!==myPeer&&ps.length>=4){k=document.createElement("button");k.className="alt";k.textContent="Vote kick";k.disabled=!!vt||Date.now()<vtCool;k.onclick=()=>voteOpen(p.peer)}
    const nm=pn(p);mkCard({id:p.peer,name:nm,seed:p.peer,av:p.peer===myPeer&&myAv?myAv:p.presence.av,crown:p.peer===ad,me:p.peer===myPeer,wins:winsCache[nm.toLowerCase()]||0,sub:p.presence.st==="play"?"in game":"",btn:k})});
   can=im&&!busy&&!counting;wait=im?(busy?"A round is in progress…":"You are the host."):"Waiting for the host to start…";const old=ps.filter(p=>p.presence.ver!==VER);if(old.length){can=false;wait=im?pn(old[0])+" is on an older version. Ask them to refresh the page.":"Someone is on an older version, so the host can’t start yet."}
   $("#lt").textContent="Room “"+curCode+"” · "+ps.length+"/8 players";$("#ropts").hidden=pending;$("#roptst").textContent=effLock()?"· 🔒 private":"· public";$("#invrow").hidden=pending;$("#invl").value=INV+curCode;$("#privrow").hidden=pending||!im;if(im&&!$("#privrow").contains(document.activeElement)){$("#priv").checked=!!effLock();$("#pwl").hidden=!$("#priv").checked}$("#pwrow").hidden=!(pending&&needPw);if(pending){wait=needPw?"Enter the password to join.":"Joining…";can=false}}
@@ -488,7 +494,7 @@ function announce(win){const nm=$("#nick").value||"Player";
 function voteOpen(target){if(!room||vt||Date.now()<vtCool)return;room.emit("vote",{a:"open",target}).catch(()=>{})}
 function voteCast(y){if(!room||!vt||!vt.el.includes(myPeer))return;room.emit("vote",{a:"cast",y:y?1:0}).catch(()=>{})}
 function onVote(m){const d=m.data;if(!d||!memb(m))return;
- if(d.a==="open"){if(vt||Date.now()<vtCool||typeof d.target!=="string"||d.target===m.peer)return;const tp=peerList.find(p=>p.peer===d.target&&valid(p));if(!tp)return;
+ if(d.a==="open"){if(vt||Date.now()<vtCool||typeof d.target!=="string"||d.target===m.peer)return;const tp=peerList.find(p=>p.peer===d.target&&valid(p));if(!tp||peerList.filter(valid).length<4)return;
   const bu=id=>(peerList.find(p=>p.peer===id)||{}).by||id,su=new Set([bu(d.target)]),el=[];for(const p of peerList.filter(valid)){if(p.peer===d.target)continue;const u=p.by||p.peer;if(su.has(u))continue;su.add(u);el.push(p.peer)}if(el.length<2||!el.includes(m.peer))return;
   vt={target:d.target,name:pn(tp),el,v:{},end:Date.now()+30000};vt.v[m.peer]=1;vt.tm=setInterval(voteTick,500);chatLine("Vote","Vote to kick "+vt.name+" started. Everyone has 30 seconds.");renderLobby();voteTick()}
  else if(d.a==="cast"&&vt&&vt.el.includes(m.peer)){vt.v[m.peer]=d.y?1:0;voteTick()}}
@@ -506,7 +512,7 @@ async function join(){
   const rm=await cap.join("bf-"+code);room=rm;
   rm.on("attack",m=>{const d=m.data,sp=memb(m);if(!d||!sp||typeof d.to!=="string"||(d.kind!=="rows"&&d.kind!=="scramble"))return;const ok=m.isMe||acOk(m,d);if(!ok)strike(m.peer);else flyAttack(elFor(m.peer),elFor(d.to));
    if(d.pw){const tp=peerList.find(p=>p.peer===d.to),tn=d.all?"everyone":d.to===myPeer?"you":String((tp&&tp.presence&&tp.presence.nick)||"a player").slice(0,12),fn=m.isMe&&m.sameTab?"You":pn(sp);const pk=(d.kind==="rows"?"Add rows":"Scramble")+(d.all&&d.fx==="flip"?" + flip":d.all&&d.fx==="extra"?" + extra row":""),lk=m.peer+pk+(d.all?"all":d.to),nw=Date.now();if(!(lastPw[lk]>nw-700)){lastPw[lk]=nw;logPower(fn,pk+(ok?"":" (blocked)"),tn,pn(sp),tn==="everyone"?null:tn==="you"?myNick():tn)}if(ok){toast("⚡ "+fn+" used "+pk+" on "+tn);sfx("power");if(d.all&&!m.isMe)sfx("combo")}}if(!ok)return;
-   if(over||d.to!==myPeer||m.isMe)return;if(d.kind==="scramble"){if(d.pw&&d.all){scramble();toast("🌀 Your board was scrambled!")}return}const n=d.pw?Math.min(sp.presence.mb?2:1,clampI(d.n,1,2))+(d.all&&d.fx==="extra"?1:0):Math.max(1,Math.min(4,+d.n||1));if(d.pw&&d.all&&d.fx==="flip"){flipUntil=Date.now()+8000;toast("🙃 Your board is flipped and your controls are reversed!")}
+   if(over||d.to!==myPeer||m.isMe)return;if(d.pw)flashB("fr");if(d.kind==="scramble"){if(d.pw&&d.all){scramble();toast("🌀 Your board was scrambled!")}return}const n=d.pw?Math.min(sp.presence.mb?2:1,clampI(d.n,1,2))+(d.all&&d.fx==="extra"?1:0):Math.max(1,Math.min(4,+d.n||1));if(d.pw&&d.all&&d.fx==="flip"){flipUntil=Date.now()+8000;toast("🙃 Your board is flipped and your controls are reversed!")}
    pend=Math.min(8,pend+n);ui()});
   rm.on("chat",m=>{const d=m.data,sp=memb(m);if(!d||typeof d.t!=="string"||!sp)return;const A=acOf(m.peer),now=Date.now();A.c=A.c.filter(x=>now-x<6000);if(A.c.length>=5)return;A.c.push(now);chatLine(pn(sp),d.t.slice(0,200).replace(/[\u0000-\u001f\u007f]/g,""),pn(sp),false,m.peer);sfx("chat")});
   rm.on("combo",m=>{const d=m.data,sp=memb(m);if(!d||!sp||m.isMe)return;const A=acOf(m.peer),now=Date.now();if(now-(A.t.cmb||0)<200)return;A.t.cmb=now;const n=clampI(d.n,1,4);if(n===4){A.bf++;A.bf++}});
@@ -586,7 +592,7 @@ for(let i=0;i<=4;i++){const b=document.createElement("button");b.className="alt"
 
 /* resize own board */
 let rz=null;
-function setBH(h){const mob=matchMedia("(max-width:700px)").matches,sm=matchMedia("(pointer:coarse),(max-width:700px)").matches;h=Math.max(200,Math.min(h,innerHeight-(mob?360:sm?330:170),1000,(innerWidth-(mob?110:56))*2));document.documentElement.style.setProperty("--bh",h+"px")}
+function setBH(h){const mob=matchMedia("(max-width:700px)").matches,sm=matchMedia("(pointer:coarse),(max-width:700px)").matches;h=Math.max(200,Math.min(h,innerHeight-(mob?282:sm?330:170),1000,(innerWidth-(mob?110:56))*2));document.documentElement.style.setProperty("--bh",h+"px")}
 $("#rz").addEventListener("pointerdown",e=>{if($("#lk").checked||matchMedia("(max-width:700px)").matches)return;rz={x:e.clientX,y:e.clientY,h:cv.getBoundingClientRect().height};e.currentTarget.setPointerCapture(e.pointerId);e.preventDefault()});
 addEventListener("pointermove",e=>{if(rz){userSized=true;setBH(rz.h+((e.clientY-rz.y)+(e.clientX-rz.x)*2)/2)}});
 addEventListener("pointerup",()=>{rz=null});
