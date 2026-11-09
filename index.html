@@ -31,6 +31,7 @@ body{touch-action:manipulation}
 #plist{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px;margin:8px 0}
 .card{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1)}
 .card.inlobby{background:rgba(51,178,73,.28);border-color:rgba(80,220,110,.6)}.card.notback{background:rgba(229,72,77,.28);border-color:rgba(255,110,115,.6)}
+.card .avb{display:flex;gap:6px;margin-top:6px}.card .avb label,.card .avb button{font-size:11px;padding:3px 8px;border-radius:6px;cursor:pointer;background:rgba(255,255,255,.18);color:#fff;border:0;font-weight:600}
 .card.new{animation:cardIn .45s ease-out}@keyframes cardIn{from{opacity:0;transform:scale(.85) translateY(10px)}to{opacity:1;transform:none}}
 .card .av{position:relative;flex:none;width:44px;height:44px}.card .av img{width:44px;height:44px;border-radius:10px;background:#14161c;display:block}
 .card small.st{font-weight:700;opacity:1}.card small.st{color:#fff}
@@ -178,7 +179,6 @@ h1{text-align:center}#logo{margin:0 auto 6px}
   <div id="ltimer" class="row" hidden style="margin:8px 0"><span id="ltt" style="font-weight:700"></span><button id="lplus" class="alt" hidden>+10s</button></div>
   <div class="row rbar"><button id="lstart">Start game</button><span id="lwait" class="stat"></span></div>
   <div id="botsel" class="row" hidden style="margin-top:10px"><span>Bots</span><span class="seg" id="bbtn"></span></div>
-  <div id="avrow" class="row" hidden style="margin-top:10px"><label style="padding:6px 10px;border-radius:6px;cursor:pointer;background:var(--bd);color:var(--fg);font-size:14px">Change avatar<input type="file" id="avfile" accept="image/*" hidden></label><button id="avreset" class="alt">Reset avatar</button></div>
   <details id="ropts" class="opts" hidden>
    <summary>⚙ Room options <span id="roptst" class="stat" style="display:inline"></span></summary>
    <div id="invrow" class="row" hidden style="margin-top:10px"><label class="fl">Invite link<input id="invl" readonly style="width:270px;max-width:100%"></label><button id="invcp" class="alt" style="align-self:flex-end">Copy link</button></div>
@@ -455,16 +455,17 @@ function mkCard(o,into){const d=document.createElement("div");d.className="card"
  const av=document.createElement("div");av.className="av";if(o.st){const dt=document.createElement("i");dt.className="sdot "+o.st;av.append(dt)}const im=document.createElement("img");im.alt="";im.src=avOk(o.av)?o.av:monster(COL[1+hashN(o.seed||o.name)%7]);av.append(im);
  if(o.wins){const m=document.createElement("div");m.className="meds";m.textContent="🥇".repeat(Math.min(o.wins,5))+(o.wins>5?"+":"");m.title=o.wins+(o.wins===1?" win":" wins");av.append(m)}
  const t=document.createElement("div");t.className="nm";t.textContent=(o.crown?"👑 ":"")+o.name+(o.me?" (you)":"");if(o.sub){const s2=document.createElement("small");s2.textContent=o.sub;if(o.st)s2.className="st "+o.st;t.append(s2)}
+ if(o.avb){const w=document.createElement("div");w.className="avb";const lb=document.createElement("label");lb.textContent="Change avatar";const fi=document.createElement("input");fi.type="file";fi.accept="image/*";fi.hidden=true;fi.onchange=avPick;lb.append(fi);const rs=document.createElement("button");rs.className="alt";rs.textContent="Reset";rs.onclick=()=>setAv("");w.append(lb,rs);t.append(w)}
  d.append(av,t);if(o.btn)d.append(o.btn);(into||$("#plist")).append(d)}
 function lobbySig(){const ps=peerList.filter(valid).sort(byJ);return JSON.stringify([mode,curCode,pending,needPw,counting,nbots,botD,myAv.length,$("#nick").value,ps.map(p=>[p.peer,pn(p),p.presence.st,p.presence.ver,(p.presence.av||"").length,(p.presence.av||"").slice(-10)]),admin(),myPeer,winsCache,!!vt,Date.now()<vtCool,!!effLock(),peerList.some(p=>p.presence&&p.presence.st==="play"),!gvEl.hidden])}
 function renderLobby(){renderTimer();const sig=lobbySig();if(sig===lastSig)return;lastSig=sig;buildLobby()}
-function buildLobby(){$("#plist").textContent="";let can=false,wait="";$("#invrow").hidden=true;$("#privrow").hidden=true;$("#pwrow").hidden=true;$("#ropts").hidden=true;$("#botsel").hidden=mode!=="solo";$("#avrow").hidden=mode==="idle"||pending;
+function buildLobby(){$("#plist").textContent="";let can=false,wait="";$("#invrow").hidden=true;$("#privrow").hidden=true;$("#pwrow").hidden=true;$("#ropts").hidden=true;$("#botsel").hidden=mode!=="solo";
  if(mode==="room"){const ad=admin(),im=ad===myPeer,busy=peerList.some(p=>p.presence&&p.presence.st==="play"),ps=peerList.filter(valid).sort(byJ);
   ps.forEach(p=>{let k=null;if(p.peer!==myPeer&&ps.length>=4){k=document.createElement("button");k.className="alt";k.textContent="Vote kick";k.disabled=!!vt||Date.now()<vtCool;k.onclick=()=>voteOpen(p.peer)}
-   const nm=pn(p);mkCard({id:p.peer,name:nm,seed:p.peer,av:p.peer===myPeer&&myAv?myAv:p.presence.av,crown:p.peer===ad,me:p.peer===myPeer,wins:winsCache[nm.toLowerCase()]||0,sub:stTxt(p.presence.st),st:stCls(p.presence.st),btn:k})});
+   const nm=pn(p);mkCard({id:p.peer,name:nm,seed:p.peer,av:p.peer===myPeer&&myAv?myAv:p.presence.av,crown:p.peer===ad,me:p.peer===myPeer,avb:p.peer===myPeer,wins:winsCache[nm.toLowerCase()]||0,sub:stTxt(p.presence.st),st:stCls(p.presence.st),btn:k})});
   can=im&&!busy&&!counting;wait=im?(busy?"A round is in progress…":"You are the host."):"Waiting for the host to start…";const old=ps.filter(p=>p.presence.ver!==VER);if(old.length){can=false;wait=im?pn(old[0])+" is on an older version. Ask them to refresh the page.":"Someone is on an older version, so the host can’t start yet."}
   $("#lt").textContent="Room “"+curCode+"” · "+ps.length+"/8 players";$("#ropts").hidden=pending;$("#roptst").textContent=effLock()?"· 🔒 private":"· public";$("#invrow").hidden=pending;$("#invl").value=INV+curCode;$("#privrow").hidden=pending||!im;if(im&&!$("#privrow").contains(document.activeElement)){$("#priv").checked=!!effLock();$("#pwl").hidden=!$("#priv").checked}$("#pwrow").hidden=!(pending&&needPw);if(pending){wait=needPw?"Enter the password to join.":"Joining…";can=false}}
- else if(mode==="solo"){mkCard({id:"solo-me",name:myNick(),seed:"me",av:myAv,me:true});
+ else if(mode==="solo"){mkCard({id:"solo-me",name:myNick(),seed:"me",av:myAv,me:true,avb:true});
   for(let i=0;i<nbots;i++){const sl=document.createElement("select");for(const d of["easy","medium","hard","insane"]){const o=document.createElement("option");o.value=d;o.textContent=d[0].toUpperCase()+d.slice(1);sl.append(o)}sl.value=botD[i]||"medium";sl.setAttribute("aria-label","Bot "+(i+1)+" difficulty");sl.onchange=()=>{botD[i]=sl.value};mkCard({id:"bot"+i,name:"Bot "+(i+1),seed:"bot"+i,btn:sl,sub:"computer player"})}
   can=true;wait="Choose how many bots to fight and set each one’s difficulty.";$("#lt").textContent="Solo practice"}
  else{$("#plist").textContent="Nobody here yet. Join a room or play solo.";$("#lt").textContent="Lobby"}
@@ -653,10 +654,10 @@ $("#pwgo").onclick=async()=>{const ad=peerList.filter(valid).sort(byJ)[0];if(!pe
 $("#pad").addEventListener("contextmenu",e=>e.preventDefault());
 $("#lplus").onclick=()=>{if(admin()!==myPeer||ltRem===null)return;ltRem=Math.min(ltRem+10,300);room.presence({lr:ltRem}).catch(()=>{});renderLobby()};
 setInterval(lobbyTick,1000);
-$("#avfile").onchange=e=>{const f=e.target.files&&e.target.files[0];e.target.value="";if(!f||!/^image\//.test(f.type))return;const im=new Image(),u=URL.createObjectURL(f);
+function avPick(e){const f=e.target.files&&e.target.files[0];e.target.value="";if(!f||!/^image\//.test(f.type))return;const im=new Image(),u=URL.createObjectURL(f);
  im.onload=()=>{URL.revokeObjectURL(u);const c=document.createElement("canvas");c.width=c.height=36;const x=c.getContext("2d"),q0=Math.min(im.width,im.height);x.drawImage(im,(im.width-q0)/2,(im.height-q0)/2,q0,q0,0,0,36,36);let q=.7,url=c.toDataURL("image/jpeg",q);while(url.length>2400&&q>.2){q-=.15;url=c.toDataURL("image/jpeg",q)}if(!avOk(url)){msg("That picture is too detailed. Try a simpler one.");return}setAv(url)};
- im.onerror=()=>URL.revokeObjectURL(u);im.src=u};
-$("#avreset").onclick=()=>setAv("");
+ im.onerror=()=>URL.revokeObjectURL(u);im.src=u}
+
 $("#gpbtn").onclick=e=>{const b=$("#gpinfo");b.hidden=!b.hidden;e.currentTarget.blur()};$("#gpx").onclick=()=>{$("#gpinfo").hidden=true};
 addEventListener("resize",()=>{if(!userSized)setBH(9999)});
 if(innerWidth<700)$("#how").open=false;
