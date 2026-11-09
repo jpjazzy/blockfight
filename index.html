@@ -30,9 +30,10 @@ body{touch-action:manipulation}
 #lobby .panel{backdrop-filter:blur(2px)}
 #plist{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px;margin:8px 0}
 .card{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1)}
+.card.inlobby{background:rgba(51,178,73,.28);border-color:rgba(80,220,110,.6)}.card.notback{background:rgba(229,72,77,.28);border-color:rgba(255,110,115,.6)}
 .card.new{animation:cardIn .45s ease-out}@keyframes cardIn{from{opacity:0;transform:scale(.85) translateY(10px)}to{opacity:1;transform:none}}
 .card .av{position:relative;flex:none;width:44px;height:44px}.card .av img{width:44px;height:44px;border-radius:10px;background:#14161c;display:block}
-.card small.st{font-weight:700;opacity:1}.card small.play{color:#f2c400}.card small.wait{color:#ff7a7f}.card small.lob{color:#5fd16f}
+.card small.st{font-weight:700;opacity:1}.card small.st{color:#fff}
 .sdot{position:absolute;left:-3px;top:-3px;width:12px;height:12px;border-radius:50%;border:2px solid #1c1f29;background:#33b249}.sdot.play{background:#f2c400}.sdot.wait{background:#e5484d}
 .card .meds{position:absolute;right:-8px;bottom:-5px;font-size:12px;letter-spacing:-5px;white-space:nowrap;filter:drop-shadow(0 1px 1px rgba(0,0,0,.7))}
 .card .nm{flex:1;font-weight:600;word-break:break-word;color:var(--fg)}.card .nm small{display:block;font-weight:400;font-size:11px;color:var(--mu)}
@@ -450,7 +451,7 @@ const avOk=s=>typeof s==="string"&&s.length<=2600&&/^data:image\/(png|jpeg|webp)
 function monster(c){const svg="<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'><rect width='40' height='40' rx='8' fill='#14161c'/><path d='M9 12l3-8 4 8M24 12l4-8 3 8' fill='"+c+"' stroke='rgba(0,0,0,.45)'/><rect x='5' y='9' width='30' height='27' rx='6' fill='"+c+"' stroke='rgba(0,0,0,.45)'/><rect x='5' y='9' width='30' height='6' rx='3' fill='#fff' fill-opacity='.28'/><circle cx='15' cy='21' r='5' fill='#fff'/><circle cx='26' cy='21' r='5' fill='#fff'/><circle cx='16' cy='22' r='2.3' fill='#111'/><circle cx='25' cy='22' r='2.3' fill='#111'/><path d='M10 17l9 3M31 17l-9 3' stroke='#111' stroke-width='2' stroke-linecap='round'/><rect x='10' y='29' width='20' height='5' rx='2' fill='#2a0a0a'/><path d='M12 29l2 3 2-3M17 29l2 3 2-3M22 29l2 3 2-3M27 29l2 3 2-3' fill='#fff'/></svg>";return"data:image/svg+xml,"+encodeURIComponent(svg)}
 const hashN=q=>{let h=0;for(const ch of String(q))h=(h*31+ch.charCodeAt(0))>>>0;return h};
 const stCls=x=>x==="play"?"play":(x==="dead"||x==="win")?"wait":"lob",stTxt=x=>x==="play"?"🎮 In game":(x==="dead"||x==="win")?"⏳ Game over, not back yet":"✅ In lobby";
-function mkCard(o,into){const d=document.createElement("div");d.className="card"+(o.id&&!known.has(o.id)?" new":"");if(o.id)known.add(o.id);
+function mkCard(o,into){const d=document.createElement("div");d.className="card"+(o.id&&!known.has(o.id)?" new":"")+(o.st==="lob"?" inlobby":o.st?" notback":"");if(o.id)known.add(o.id);
  const av=document.createElement("div");av.className="av";if(o.st){const dt=document.createElement("i");dt.className="sdot "+o.st;av.append(dt)}const im=document.createElement("img");im.alt="";im.src=avOk(o.av)?o.av:monster(COL[1+hashN(o.seed||o.name)%7]);av.append(im);
  if(o.wins){const m=document.createElement("div");m.className="meds";m.textContent="🥇".repeat(Math.min(o.wins,5))+(o.wins>5?"+":"");m.title=o.wins+(o.wins===1?" win":" wins");av.append(m)}
  const t=document.createElement("div");t.className="nm";t.textContent=(o.crown?"👑 ":"")+o.name+(o.me?" (you)":"");if(o.sub){const s2=document.createElement("small");s2.textContent=o.sub;if(o.st)s2.className="st "+o.st;t.append(s2)}
