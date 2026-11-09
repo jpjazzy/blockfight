@@ -78,6 +78,11 @@ body{touch-action:manipulation}
  #opps{display:none!important}
  .side{flex-direction:column;gap:6px}.side canvas{width:60px}
  body.ingame{position:fixed;left:0;right:0;top:0;bottom:0;width:100%;height:100%;height:100dvh;overflow:hidden;overscroll-behavior:none;padding:6px 8px 0}
+ #chatbtn{display:flex;align-items:center;justify-content:center;position:fixed;right:10px;bottom:12px;z-index:7;width:42px;height:42px;padding:0;border-radius:50%;font-size:20px;background:#2b2e36;border:1px solid #555;box-shadow:0 3px 0 #15161a}
+ #chatbtn.unread::after{content:'';position:absolute;top:2px;right:2px;width:10px;height:10px;border-radius:50%;background:#e5484d}
+ body.ingame #chatbtn{bottom:calc(184px + env(safe-area-inset-bottom,0px))}
+ #chat{display:none!important}body.chatopen #chat{display:flex!important;bottom:64px}
+ body.chatopen.ingame #chat{bottom:calc(236px + env(safe-area-inset-bottom,0px))}
  #pad{will-change:transform;transform:translateZ(0);-webkit-transform:translateZ(0)}
  .kb{display:none}.tc{display:inline}body.ingame #copy{display:none}#lobby{padding:8px}.card{padding:6px 8px}
 }#vby.me,#vbn.me{outline:2px solid var(--fg)}
@@ -126,6 +131,8 @@ html{min-height:100%;background-color:#131313;background-image:linear-gradient(2
 .rhead{display:flex;justify-content:space-between;align-items:center;padding-bottom:8px;margin-bottom:10px;border-bottom:1px solid var(--bd)}#lt{font-size:18px}
 .rbar{margin-top:10px;padding-top:10px;border-top:1px solid var(--bd)}
 details.opts{margin-top:12px;border:1px solid var(--bd);border-radius:10px;padding:8px 12px;background:rgba(255,255,255,.04)}details.opts summary{cursor:pointer;font-weight:600}
+#chatbtn{display:none}
+html:has(body.ingame){overflow:hidden}
 #pcard{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:9;width:min(320px,92vw);box-shadow:0 8px 30px rgba(0,0,0,.5)}
 #log b[title]{text-decoration:underline dotted}
 #copy{position:fixed;left:0;right:0;bottom:8px;margin:0;padding:0;border:0;text-align:center;z-index:3;pointer-events:none;text-shadow:0 1px 3px #000}
@@ -215,6 +222,7 @@ h1{text-align:center}#logo{margin:0 auto 6px}
 
 <footer id="copy">© Jeremy Lanning 2026</footer>
 
+<button id="chatbtn" aria-label="Open chat" title="Chat">💬</button>
 <aside id="chat" class="panel">
  <div class="row" style="justify-content:space-between;margin-bottom:6px"><b>Chat</b><button id="rooms" class="alt">Rooms</button></div>
  <div id="rl" hidden></div>
@@ -450,12 +458,12 @@ function buildLobby(){$("#plist").textContent="";let can=false,wait="";$("#invro
  $("#lstart").style.display=mode==="idle"?"none":"";$("#lstart").disabled=!can;$("#lwait").textContent=wait;
  [...$("#bbtn").children].forEach((b,i)=>b.classList.toggle("on",i===nbots))}
 function renderTimer(){const t=$("#ltimer");if(mode!=="room"||pending){t.hidden=true;return}const ps=peerList.filter(valid),ad=admin(),adp=ps.find(p=>p.peer===ad),im=ad===myPeer,busy=peerList.some(p=>p.presence&&p.presence.st==="play");
- const rem=im?(ltRem||0):(adp?clampI(adp.presence.lr,0,600):0);
- if(!(ps.length>2)||busy||counting||rem<=0){t.hidden=true;return}
- t.hidden=false;$("#ltt").textContent="⏱ Game starts in "+((rem/60)|0)+":"+String(rem%60).padStart(2,"0");$("#lplus").hidden=!im}
+ const rem=im?(ltRem||0):(adp?clampI(adp.presence.lr,0,300):0);
+ if(!(ps.length>1)||busy||counting||rem<=0){t.hidden=true;return}
+ t.hidden=false;$("#ltt").textContent="⏱ Game starts in "+((rem/60)|0)+":"+String(rem%60).padStart(2,"0");$("#lplus").hidden=!im;$("#lplus").disabled=rem>=300}
 function lobbyTick(){if(!room||pending||mode!=="room"||admin()!==myPeer){ltRem=null;return}
  const ps=peerList.filter(valid),busy=peerList.some(p=>p.presence&&p.presence.st==="play");
- if(!(ps.length>2&&!busy&&!counting&&gvEl.hidden)){if(ltRem!==null){ltRem=null;room.presence({lr:null}).catch(()=>{});renderLobby()}return}
+ if(!(ps.length>1&&!busy&&!counting&&gvEl.hidden)){if(ltRem!==null){ltRem=null;room.presence({lr:null}).catch(()=>{});renderLobby()}return}
  if(ltRem===null)ltRem=120;else ltRem--;
  if(ltRem<=0){const r=hostStart();if(r===false){ltRem=30;room.presence({lr:30}).catch(()=>{})}else{ltRem=null;room.presence({lr:null}).catch(()=>{})}}
  else room.presence({lr:ltRem}).catch(()=>{});
@@ -555,8 +563,10 @@ function tick(t){const dt=Math.min(100,t-last);last=t;T=t;if(gvEl.hidden)return;
 function toast(s){const e=$("#toast");e.textContent=s;e.classList.remove("show");void e.offsetWidth;e.classList.add("show");clearTimeout(toastT);toastT=setTimeout(()=>e.classList.remove("show"),4300)}
 const pc={},HUES=[205,145,275,45,175,300,95,235,120,260];
 function pcol(k){if(!(k in pc))pc[k]=HUES[Object.keys(pc).length%HUES.length];return"hsl("+pc[k]+" 70% 48%)"}
-function chatLine(n,t,key,forceSys,pid){const l=$("#log"),d=document.createElement("div"),b=document.createElement("b");b.textContent=n+": ";b.style.color=key===undefined||forceSys?"#e5484d":pcol(key);if(pid){b.style.cursor="pointer";b.title="View player card";b.onclick=()=>showCard(pid)}d.append(b,document.createTextNode(t));l.append(d);while(l.children.length>80)l.firstChild.remove();l.scrollTop=l.scrollHeight}
+function chatLine(n,t,key,forceSys,pid){const l=$("#log"),d=document.createElement("div"),b=document.createElement("b");b.textContent=n+": ";if(!document.body.classList.contains("chatopen"))$("#chatbtn").classList.add("unread");b.style.color=key===undefined||forceSys?"#e5484d":pcol(key);if(pid){b.style.cursor="pointer";b.title="View player card";b.onclick=()=>showCard(pid)}d.append(b,document.createTextNode(t));l.append(d);while(l.children.length>80)l.firstChild.remove();l.scrollTop=l.scrollHeight}
 let chatT=0;function chatSend(){const i=$("#cin"),t=i.value.trim();if(!t||!room||Date.now()-chatT<400)return;chatT=Date.now();i.value="";room.emit("chat",{n:$("#nick").value||"Player",t:t.slice(0,200)}).catch(()=>{})}
+$("#chatbtn").onclick=()=>{const o=document.body.classList.toggle("chatopen");$("#chatbtn").classList.remove("unread");$("#chatbtn").textContent=o?"✕":"💬";$("#chatbtn").setAttribute("aria-label",o?"Close chat":"Open chat")};
+let idleN=0;setInterval(()=>{if(mode==="room"&&room&&!gvEl.hidden&&over&&!counting&&!targets().length){if(++idleN>=10){idleN=0;backToLobby()}}else idleN=0},1000);
 $("#csend").onclick=chatSend;$("#cin").addEventListener("keydown",e=>{if(e.key==="Enter")chatSend()});
 const act={L:()=>move(-1,0),R:()=>move(1,0),D:()=>{if(move(0,1))score+=1;ui()},C:()=>rot(1),H:hard,S:holdPiece,U:hard,Y:hard,A:()=>rot(1),B:()=>rot(-1),X:holdPiece};
 addEventListener("keydown",e=>{if(e.target.tagName==="INPUT"&&e.target.type!=="checkbox")return;const k=e.key;
@@ -628,7 +638,7 @@ $("#pwgo").onclick=async()=>{const ad=peerList.filter(valid).sort(byJ)[0];if(!pe
  document.querySelectorAll("#pad button").forEach(bt=>{const k=bt.dataset.k;bt.addEventListener("pointerdown",e=>{e.preventDefault();musicStart();if(navigator.vibrate)navigator.vibrate(6);if(over)return;if(k==="L")holdStart(-1);else if(k==="R")holdStart(1);else if(k==="D"){act.D();softI=setInterval(act.D,70)}else act[k]()});
   ["pointerup","pointercancel","pointerleave"].forEach(ev=>bt.addEventListener(ev,stop))})})();
 $("#pad").addEventListener("contextmenu",e=>e.preventDefault());
-$("#lplus").onclick=()=>{if(admin()!==myPeer||ltRem===null)return;ltRem=Math.min(ltRem+10,600);room.presence({lr:ltRem}).catch(()=>{});renderLobby()};
+$("#lplus").onclick=()=>{if(admin()!==myPeer||ltRem===null)return;ltRem=Math.min(ltRem+10,300);room.presence({lr:ltRem}).catch(()=>{});renderLobby()};
 setInterval(lobbyTick,1000);
 $("#avfile").onchange=e=>{const f=e.target.files&&e.target.files[0];e.target.value="";if(!f||!/^image\//.test(f.type))return;const im=new Image(),u=URL.createObjectURL(f);
  im.onload=()=>{URL.revokeObjectURL(u);const c=document.createElement("canvas");c.width=c.height=36;const x=c.getContext("2d"),q0=Math.min(im.width,im.height);x.drawImage(im,(im.width-q0)/2,(im.height-q0)/2,q0,q0,0,0,36,36);let q=.7,url=c.toDataURL("image/jpeg",q);while(url.length>2400&&q>.2){q-=.15;url=c.toDataURL("image/jpeg",q)}if(!avOk(url)){msg("That picture is too detailed. Try a simpler one.");return}setAv(url)};
