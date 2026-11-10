@@ -191,7 +191,7 @@ h1{text-align:center}#logo{margin:0 auto 6px}
   <div><b>Goal</b>Be the last one standing. Clear lines to send garbage rows to your opponents.</div>
   <div><b>Controls</b><span class="kb">← → move, ↑ or X rotate, Z rotate back, ↓ soft drop, Space hard drop, Shift or C hold a piece. Controllers work too (click 🎮 by the board).</span><span class="tc">Use the on screen pad: ◀ ▶ move, ▼ soft drop, ▲ or Y hard drop, A rotate, B rotate back, X hold a piece. Hold ◀ ▶ ▼ to repeat.</span></div>
   <div><b>Combos</b>Clear lines with back to back pieces and your lines, score and garbage multiply by your streak.</div>
-  <div><b>Grey rows</b>Garbage rows never clear from normal line clears. Only a 4 line Blockfight removes one.</div>
+  <div><b>Grey rows</b>Fill the gap in a garbage row and it clears like any other line, with bonus garbage sent back. A 4 line Blockfight also blasts away one extra garbage row.</div>
   <div><b>Powers</b>Every 5 lines sends 1 garbage row to a random opponent (2 rows from a phone). A 4 line Blockfight hits everyone with a row plus a random bonus: an extra row, or a flipped board with reversed controls for 8 seconds. It also clears a pure grey garbage row from your own stack. Making two Blockfights in a row also scrambles every opponent's board.</div>
   <div><b>Speed</b>Blocks fall faster every 20 seconds, and the timer flashes when it happens.</div>
   <div><b>Rooms</b>The first player in is the host and starts the game. With 4 or more players anyone can call a vote kick.</div>
@@ -261,35 +261,6 @@ h1{text-align:center}#logo{margin:0 auto 6px}
 <div id="sndw"><button id="snd" aria-label="Mute music" title="Music"></button><input type="range" id="vol" min="0" max="100" value="50" aria-label="Music volume"></div>
 
 <script>
-/* ===== Network layer for hosting this page anywhere (replaces the claude.ai room feature) =====
-   Uses Trystero: free, no account, players connect directly browser to browser. */
-const APP_ID="blockfight-7xq2vk9m"; /* change to any unique text of your own; everyone must use the same one */
-const TRYSTERO="https://esm.run/trystero@0.26.0";
-let trLib=null;
-async function netJoin(name){
- trLib=trLib||await import(TRYSTERO);
- const {joinRoom,selfId}=trLib,tr=joinRoom({appId:APP_ID},name);
- const pA=tr.makeAction("pres"),eA=tr.makeAction("evt");
- const peers=new Map(),handlers={},subs=[];let mine={},timer=0;
- const mk=id=>({peer:id,by:null,kind:"viewer",guest:false,isMe:id===selfId,sameTab:id===selfId,presence:id===selfId?mine:((peers.get(id)||{}).presence||{}),updatedAt:Date.now()});
- const snap=()=>[selfId,...peers.keys()].map(mk);
- const notify=()=>{const c={peers:snap()};subs.forEach(f=>{try{f(c)}catch(e){}})};
- const flush=()=>{timer=0;pA.send(mine).catch(()=>{})};
- const deliver=(m,id)=>{(handlers[m.topic]||[]).forEach(fn=>{try{fn({...mk(id),topic:m.topic,data:m.data})}catch(e){}})};
- tr.onPeerJoin=id=>{peers.set(id,{presence:{}});pA.send(mine,{target:id}).catch(()=>{});notify()};
- tr.onPeerLeave=id=>{peers.delete(id);notify()};
- pA.onMessage=(d,{peerId})=>{if(!d||typeof d!=="object")return;const p=peers.get(peerId)||{};p.presence=d;peers.set(peerId,p);notify()};
- eA.onMessage=(m,{peerId})=>{if(m&&typeof m.topic==="string")deliver(m,peerId)};
- return{
-  presence(patch){mine={...mine};for(const k in patch){if(patch[k]===null)delete mine[k];else mine[k]=patch[k]}notify();if(!timer)timer=setTimeout(flush,40);return Promise.resolve()},
-  emit(topic,data){deliver({topic,data},selfId);return eA.send({topic,data})},
-  on(topic,fn){(handlers[topic]=handlers[topic]||[]).push(fn)},
-  onPeers(fn){subs.push(fn);setTimeout(()=>fn({peers:snap()}),0)},
-  peers:snap,
-  async leave(){clearTimeout(timer);tr.leave()}}}
-window.claude={use:async k=>k==="room"?{join:netJoin}:null};
-</script>
-<script>
 const W=10,H=20,$=s=>document.querySelector(s);
 const COL=["","#00c2d4","#f2c400","#a24bd6","#33b249","#e5484d","#3b6cf0","#f08a24","#7a7f8a"];
 const SHP={1:[[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]],2:[[2,2],[2,2]],3:[[0,3,0],[3,3,3],[0,0,0]],4:[[0,4,4],[4,4,0],[0,0,0]],5:[[5,5,0],[0,5,5],[0,0,0]],6:[[6,0,0],[6,6,6],[0,0,0]],7:[[0,0,7],[7,7,7],[0,0,0]]};
@@ -320,7 +291,7 @@ function fall(){let any=false;for(let guard=0;guard<H*2;guard++){const seen=Arra
    for(const[da,db]of[[1,0],[-1,0],[0,1],[0,-1]]){const p=a+da,q=b+db;if(p>=0&&p<W&&q>=0&&q<H&&!seen[q][p]&&g[q][p]===c){seen[q][p]=true;st.push([p,q])}}}
   if(!sup)mv.push({comp,c})}
  if(!mv.length)break;any=true;for(const m of mv)for(const[a,b]of m.comp)g[b][a]=0;for(const m of mv)for(const[a,b]of m.comp)g[b+1][a]=m.c}return any}
-function clearPass(first){let n=0;const cl=[];for(let y=H-1;y>=0;y--)if(g[y].every(v=>v)&&!g[y].includes(8)){cl.push({y:y-n,row:g[y].slice()});g.splice(y,1);g.unshift(Array(W).fill(0));n++;y++}
+function clearPass(first){let n=0;const cl=[];for(let y=H-1;y>=0;y--)if(g[y].every(v=>v)){cl.push({y:y-n,row:g[y].slice()});g.splice(y,1);g.unshift(Array(W).fill(0));n++;y++}
  if(!n)return false;
  streak++;gb=cl.filter(c=>c.row.filter(v=>v===8).length>=W-1).length;burst(cl,n,streak,gb);
  const e=n*streak+gb;lines+=e;score+=[0,100,300,500,800][n]*streak+100*gb;
@@ -355,7 +326,7 @@ function botStep(b){
 function startSolo(){bots=Array.from({length:nbots},(_,i)=>({n:"Bot "+(i+1)+" ("+(botD[i]||"medium")+")",d:botD[i]||"medium",id:"bot"+i,k:i,g:empty(),st:"play",score:0,lines:0,pend:0,bag:[],t:0}));syncOpps([]);start()}
 
 /* ---------- multiplayer plumbing ---------- */
-const INV=location.href.split("#")[0].split("?")[0]+"#";
+const INV="https://claude.ai/artifact/QQDmyNkGLniXSoZnaX8njV#";
 const VER=8;
 const kicked=new Set(),flagged=new Set(),AC={},lastPw={},RES=/^(room|vote|result|winner|system|host|admin|moderator|bot ?\d*)$/i;
 const clampI=(v,a,b)=>Math.max(a,Math.min(b,Math.round(+v)||0));
