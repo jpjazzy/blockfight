@@ -326,8 +326,8 @@ function botStep(b){
 function startSolo(){bots=Array.from({length:nbots},(_,i)=>({n:"Bot "+(i+1)+" ("+(botD[i]||"medium")+")",d:botD[i]||"medium",id:"bot"+i,k:i,g:empty(),st:"play",score:0,lines:0,pend:0,bag:[],t:0}));syncOpps([]);start()}
 
 /* ---------- multiplayer plumbing ---------- */
-const INV="https://claude.ai/artifact/QQDmyNkGLniXSoZnaX8njV#";
-const VER=8;
+const INV=location.origin+location.pathname+"#";
+const VER=9;let ADMIT_MS=2500;
 const kicked=new Set(),flagged=new Set(),AC={},lastPw={},RES=/^(room|vote|result|winner|system|host|admin|moderator|bot ?\d*)$/i;
 const clampI=(v,a,b)=>Math.max(a,Math.min(b,Math.round(+v)||0));
 const normName=n=>String(n||"").normalize("NFKC").replace(/[^\p{L}\p{N} _.!']/gu,"").replace(/\s+/g," ").trim().slice(0,12);
@@ -484,7 +484,7 @@ function renderVote(yes,need,left){const b=$("#vb");if(!vt){b.hidden=true;return
 async function leaveRoom(t){if(vt){clearInterval(vt.tm);vt=null;renderVote()}pending=false;needPw=false;lastL=-1;curNick="";winsCache={};known.clear();ltRem=null;lastSig="";memPrev=new Set();memInit=false;const r=room;room=null;mode="idle";peerList=[];over=true;syncOpps([]);$("#cin").disabled=true;$("#csend").disabled=true;$("#cin").placeholder="Join a room to chat";hubSet("");showLobby();if(t)msg(t);renderLobby();if(r)try{await r.leave()}catch(e){}}
 async function join(){
  const code=$("#code").value.toLowerCase().replace(/[^a-z0-9]/g,"").slice(0,12);if(!code){msg("Type a room name first, like stackloft.");return}
- if(!cap){msg("Multiplayer needs you to be signed in and invited to this page. You can still play solo.");return}
+ if(!cap){msg("Multiplayer is still connecting. Give it a few seconds, or play solo while you wait.");return}
  const nn=normName($("#nick").value);if(!nn||RES.test(nn))return nameErr("Pick a different name. Use letters and numbers, and avoid reserved words like Room or Bot.");if(hub&&nameTaken(nn))return nameErr("The name “"+nn+"” is already in use in a lobby. Pick another name.");$("#nick").value=nn;msg("Joining…");
  try{if(room){const r=room;room=null;try{await r.leave()}catch(e){}}
   syncOpps([]);over=true;curCode=code;mode="room";memPrev=new Set();memInit=false;
@@ -499,11 +499,36 @@ async function join(){
   rm.on("vote",onVote);
   rm.on("abort",m=>{if(m.isMe||pending||m.peer!==admin())return;toLobby(String((m.data&&m.data.r)||"The host ended the round.").slice(0,120).replace(/[\u0000-\u001f]/g,""))});
   rm.onPeers(onPeers);
-  pending=true;needPw=false;pwTries=0;curNick=nn;myNt=Date.now();if(hub)hub.presence({nm:nn,nt:myNt}).catch(()=>{});await rm.presence({nick:nn,ver:VER,mb:matchMedia("(max-width:700px)").matches?1:0,st:"idle",score:0,board:""});setTimeout(()=>{if(pending&&room===rm&&!peerList.some(valid))admit(null)},2500);
+  pending=true;needPw=false;pwTries=0;curNick=nn;myNt=Date.now();if(hub)hub.presence({nm:nn,nt:myNt}).catch(()=>{});await rm.presence({nick:nn,ver:VER,mb:matchMedia("(max-width:700px)").matches?1:0,st:"idle",score:0,board:""});setTimeout(()=>{if(pending&&room===rm&&!peerList.some(valid))admit(null)},ADMIT_MS);
   
   hubSet(code);showLobby();msg("Joining room “"+code+"”…");renderLobby()}
  catch(e){if(!room){mode="idle";renderLobby()}msg("Couldn’t join the room. Try again.")}}
-async function init(){if(!window.claude||!claude.use)return;try{cap=await claude.use("room");if(!cap)return;hub=await cap.join("bf-hub");hub.onPeers(c=>{hubPeers=c.peers;renderRooms();checkDup()});await hub.presence({r:""});const h=location.hash.slice(1).toLowerCase().replace(/[^a-z0-9]/g,"").slice(0,12);if(h){$("#code").value=h;join()}}catch(e){}}
+/* ---------- free peer to peer multiplayer (no sign in needed) ----------
+   Uses Trystero: browsers find each other through public Nostr relays and then
+   talk directly over WebRTC. No accounts, keys, or server to run. */
+const TY_URLS=["https://cdn.jsdelivr.net/npm/trystero@0.21.8/+esm","https://esm.sh/trystero@0.21.8"];
+async function tyLoad(){for(const u of TY_URLS){try{const m=await import(u);if(m&&m.joinRoom)return m}catch(e){}}return null}
+function tyCap(T){const cfg={appId:"ggez-arcade-blockfight"};return{join:async name=>{
+ const r=T.joinRoom(cfg,name),me=T.selfId,pres={},mine={},hs={},ps=[];let alive=true;
+ const [sP,gP]=r.makeAction("pr"),[sE,gE]=r.makeAction("ev");
+ const safe=f=>{try{const x=f();if(x&&x.catch)x.catch(()=>{})}catch(e){}};
+ const list=()=>[{peer:me,presence:{...mine},isMe:true,sameTab:true},...Object.keys(pres).map(id=>({peer:id,presence:pres[id],isMe:false,sameTab:false}))];
+ const fire=()=>{if(!alive)return;const c={peers:list()};ps.forEach(f=>{try{f(c)}catch(e){console.error(e)}})};
+ const deliver=(e,data,peer)=>{if(!alive)return;const m={data,peer,isMe:peer===me,sameTab:peer===me};(hs[e]||[]).forEach(f=>{try{f(m)}catch(x){console.error(x)}})};
+ r.onPeerJoin(id=>safe(()=>sP(mine,id)));
+ r.onPeerLeave(id=>{if(id in pres){delete pres[id];fire()}});
+ gP((d,id)=>{if(!d||typeof d!=="object"||Array.isArray(d))return;pres[id]=d;fire()});
+ gE((d,id)=>{if(d&&typeof d.e==="string")deliver(d.e,d.d,id)});
+ return{
+  presence:async p=>{if(!alive)return;Object.assign(mine,p);safe(()=>sP(mine));fire()},
+  onPeers:f=>{ps.push(f);setTimeout(()=>{if(alive)f({peers:list()})},0)},
+  on:(e,f)=>{(hs[e]=hs[e]||[]).push(f)},
+  emit:async(e,data)=>{if(!alive)return;safe(()=>sE({e,d:data}));setTimeout(()=>deliver(e,data,me),0)},
+  leave:async()=>{alive=false;try{await r.leave()}catch(e){}}
+ }}}}
+async function init(){try{if(window.claude&&claude.use){try{cap=await claude.use("room")}catch(e){cap=null}}
+ if(!cap){msg("Connecting to multiplayer…");const T=await tyLoad();if(!T){msg("Couldn’t reach the multiplayer service. You can still play solo.");return}cap=tyCap(T);ADMIT_MS=6000;msg("Multiplayer ready. Pick a name and a room, or play solo.")}
+ hub=await cap.join("bf-hub");hub.onPeers(c=>{hubPeers=c.peers;renderRooms();checkDup()});await hub.presence({r:""});const h=location.hash.slice(1).toLowerCase().replace(/[^a-z0-9]/g,"").slice(0,12);if(h){$("#code").value=h;join()}}catch(e){}}
 
 /* ---------- drawing ---------- */
 function cell(c,x,y,s,col,a){const k=COL.indexOf(col),ph=(x*7+y*13)*.37,t=T/1000,al=a||1,live=al>=1;c.save();c.globalAlpha=al;c.translate(x*s+s/2,y*s+s/2);let sx=1,sy=1,r=0,ox=0,oy=0;
