@@ -189,7 +189,7 @@ h1{text-align:center}#logo{margin:0 auto 6px}
  <summary style="cursor:pointer;font-weight:700">📖 How to play <span class="stat" style="display:inline">(click to hide)</span></summary>
  <div class="how">
   <div><b>Goal</b>Be the last one standing. Clear lines to send garbage rows to your opponents.</div>
-  <div><b>Controls</b><span class="kb">← → move, ↑ or X rotate, Z rotate back, ↓ soft drop, Space hard drop, Shift or C hold a piece. Controllers work too (click 🎮 by the board).</span><span class="tc">Use the on screen pad: ◀ ▶ move, ▼ soft drop, ▲ or Y hard drop, A rotate, B rotate back, X hold a piece. Hold ◀ ▶ ▼ to repeat.</span></div>
+  <div><b>Controls</b><span class="kb">← → move, ↑ or X rotate, Z rotate back, ↓ soft drop, Space hard drop, Shift or C hold a piece. Controllers work too (click 🎮 by the board).</span><span class="tc">Use the on screen pad: ◀ ▶ move, ▼ soft drop, ▲ does nothing, A hard drop, B rotate clockwise, X rotate counterclockwise, Y hold a piece. Hold ◀ ▶ ▼ to repeat.</span></div>
   <div><b>Combos</b>Clear lines with back to back pieces and your lines, score and garbage multiply by your streak.</div>
   <div><b>Grey rows</b>Fill the gap in a garbage row and it clears like any other line, with bonus garbage sent back. A 4 line Blockfight also blasts away one extra garbage row.</div>
   <div><b>Powers</b>Every 5 lines sends 1 garbage row to a random opponent (2 rows from a phone). A 4 line Blockfight hits everyone with a row plus a random bonus: an extra row, or a flipped board with reversed controls for 8 seconds. It also clears a pure grey garbage row from your own stack. Making two Blockfights in a row also scrambles every opponent's board.</div>
@@ -211,7 +211,7 @@ h1{text-align:center}#logo{margin:0 auto 6px}
     <div id="rz" title="Drag to resize" aria-label="Drag to resize the board"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M20 8L8 20M20 14l-6 6M20 2L2 20" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg></div>
    </div>
    <label class="lock"><input type="checkbox" id="lk"> Lock board size</label>
-   <div id="pad"><div class="dp"><button data-k="U" aria-label="Hard drop">▲</button><button data-k="L" aria-label="Left">◀</button><button data-k="R" aria-label="Right">▶</button><button data-k="D" aria-label="Soft drop">▼</button></div><div class="fb"><button data-k="Y" aria-label="Hard drop">Y</button><button data-k="X" aria-label="Hold piece">X</button><button data-k="B" aria-label="Rotate back">B</button><button data-k="A" aria-label="Rotate">A</button></div></div>
+   <div id="pad"><div class="dp"><button data-k="U" aria-label="Up (does nothing)">▲</button><button data-k="L" aria-label="Left">◀</button><button data-k="R" aria-label="Right">▶</button><button data-k="D" aria-label="Soft drop">▼</button></div><div class="fb"><button data-k="Y" aria-label="Hold piece">Y</button><button data-k="X" aria-label="Rotate counterclockwise">X</button><button data-k="B" aria-label="Rotate clockwise">B</button><button data-k="A" aria-label="Hard drop">A</button></div></div>
   </div>
   <div class="side">
    <div class="pr"><div class="stat keep">Next</div><canvas id="nx" width="120" height="120"></canvas></div>
@@ -254,7 +254,7 @@ h1{text-align:center}#logo{margin:0 auto 6px}
   <circle cx="268" cy="68" r="11" fill="#f9b800"/><circle cx="248" cy="88" r="11" fill="#1c6fe6"/><circle cx="288" cy="88" r="11" fill="#d9272e"/><circle cx="268" cy="108" r="11" fill="#3aa53a"/>
   <g font-size="12" font-weight="800" fill="#fff" text-anchor="middle"><text x="268" y="72" fill="#111">Y</text><text x="248" y="92">X</text><text x="288" y="92">B</text><text x="268" y="112">A</text></g>
  </svg>
- <div class="lg"><b>Left stick or D-pad ◀ ▶</b><span>Move</span><b>Stick or D-pad ▼</b><span>Soft drop</span><b>D-pad ▲, Y, RB, RT</b><span>Hard drop</span><b>A</b><span>Rotate</span><b>B</b><span>Rotate back</span><b>X, LB, LT</b><span>Hold piece</span></div>
+ <div class="lg"><b>Left stick or D-pad ◀ ▶</b><span>Move</span><b>Stick or D-pad ▼</b><span>Soft drop</span><b>A, RB, RT</b><span>Hard drop</span><b>B</b><span>Rotate clockwise</span><b>X</b><span>Rotate counterclockwise</span><b>Y, LB, LT</b><span>Hold piece</span><b>D-pad ▲</b><span>Does nothing</span></div>
  <div id="gpstat" class="stat" style="margin-top:8px">No controller detected yet. Press any button on it.</div></div>
 <div id="pcard" class="panel" hidden><div class="row" style="justify-content:space-between;margin-bottom:8px"><b>Player</b><button id="pcx" class="alt">Close</button></div><div id="pcb"></div></div>
 <div id="lg" class="panel" hidden><div class="row" style="justify-content:space-between;margin-bottom:6px"><b>Power log</b><button id="lgx" class="alt">Close</button></div><div id="lgl"></div></div>
@@ -331,6 +331,10 @@ const VER=9;let ADMIT_MS=2500;
 const kicked=new Set(),flagged=new Set(),AC={},lastPw={},RES=/^(room|vote|result|winner|system|host|admin|moderator|bot ?\d*)$/i;
 const clampI=(v,a,b)=>Math.max(a,Math.min(b,Math.round(+v)||0));
 const normName=n=>String(n||"").normalize("NFKC").replace(/[^\p{L}\p{N} _.!']/gu,"").replace(/\s+/g," ").trim().slice(0,12);
+/* Name and room filter. The word list is base64 encoded so it isn't readable in the page source. */
+const BADW=JSON.parse(atob("W1siZnVjayIsImZ2Y2siLCJwaHVjayIsImZjayIsInNoaXQiLCJjdW50IiwiYml0Y2giLCJiaWF0Y2giLCJuaWdnZXIiLCJuaWdnYSIsImZhZ2dvdCIsIndob3JlIiwic2x1dCIsInB1c3N5IiwicGVuaXMiLCJ2YWdpbmEiLCJwb3JuIiwicmV0YXJkIiwidHdhdCIsImJhc3RhcmQiLCJib2xsb2NrIiwiZGlsZG8iLCJqaXp6IiwiY29ja3N1Y2siLCJtb3RoZXJmIiwiYXNzaG9sZSIsImR1bWJhc3MiLCJqYWNrYXNzIiwiZGlja2hlYWQiLCJuYXppIiwiaGl0bGVyIiwid2V0YmFjayIsInRyYW5ueSIsIm1vbGVzdCIsImtpa2UiLCJjaGluayIsInNwaWNrIiwiYmVhbmVyIiwiZ29vayIsInNleHkiLCJib25lciIsInRpdHR5Iiwic2thbmsiLCJkb3VjaGUiLCJoZW50YWkiLCJtaWxmIiwib3JnYXNtIiwiYmxvd2pvYiIsImhhbmRqb2IiLCJidXR0aG9sZSIsImN1bXNob3QiLCJ3YW5rZXIiXSxbImFzcyIsImFzc2VzIiwiYXJzZSIsImRpY2siLCJkaWNrcyIsImNvY2siLCJjb2NrcyIsImN1bSIsInNleCIsInJhcGUiLCJyYXBlZCIsImFuYWwiLCJhbnVzIiwidGl0IiwidGl0cyIsImhvZSIsImhvZXMiLCJmYWciLCJmYWdzIiwiZHlrZSIsImhvbW8iLCJjb29uIiwicGVkbyIsInByaWNrIiwia2trIiwic3BpYyIsInRob3QiLCJuaWciLCJqYXAiLCJwaXNzIiwid2FuayIsImZ1ayIsImZ1cSIsInNoaXRlIiwiaG9ybnkiXV0=")),LEET={"0":"o","1":"i","3":"e","4":"a","5":"s","7":"t","8":"b","9":"g","@":"a","$":"s","!":"i","|":"i"};
+const bwRx=w=>w.replace(/(.)\1*/g,(m,c)=>c+(m.length>1?"{"+m.length+",}":"+")),BAD_SUB=new RegExp(BADW[0].map(bwRx).join("|")),BAD_TOK=new RegExp("^(?:"+BADW[1].map(bwRx).join("|")+")$");
+function isBad(v){const t=String(v||"").normalize("NFKD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[01345789@$!|]/g,c=>LEET[c]||c),all=t.replace(/[^a-z]/g,"");if(!all)return false;return BAD_SUB.test(all)||BAD_TOK.test(all)||t.split(/[^a-z]+/).some(x=>x&&BAD_TOK.test(x))}
 const nameTaken=n=>hubPeers.some(p=>!p.isMe&&p.presence&&typeof p.presence.nm==="string"&&p.presence.nm.toLowerCase()===n.toLowerCase());
 function nameErr(t){msg(t);const n=$("#nick");n.style.borderColor="#e5484d";n.focus()}
 function checkDup(){if(!room||!curNick)return;const me=hubPeers.find(p=>p.isMe&&p.sameTab);if(!me||!me.presence.nm)return;const lo=curNick.toLowerCase();
@@ -338,7 +342,7 @@ function checkDup(){if(!room||!curNick)return;const me=hubPeers.find(p=>p.isMe&&
 function padPoll(dt){const ps=navigator.getGamepads?navigator.getGamepads():[];let p=null;for(const q of ps)if(q&&q.connected){p=q;break}
  if(gp.on!==!!p){gp.on=!!p;$("#gpbtn").classList.toggle("on",!!p);$("#gpstat").textContent=p?"Controller connected: "+String(p.id).slice(0,48):"No controller detected yet. Press any button on it."}
  if(!p)return;const b=i=>!!(p.buttons[i]&&p.buttons[i].pressed),ax=p.axes[0]||0,ay=p.axes[1]||0;
- const st={l:b(14)||ax<-.5,r:b(15)||ax>.5,d:b(13)||ay>.6,rot:b(0),rotb:b(1),hold:b(2)||b(4)||b(6),hard:b(3)||b(5)||b(7)||b(12)||ay<-.85};
+ const st={l:b(14)||ax<-.5,r:b(15)||ax>.5,d:b(13)||ay>.6,rot:b(1),rotb:b(2),hold:b(3)||b(4)||b(6),hard:b(0)||b(5)||b(7)};
  if(!over){if(st.rot&&!gp.prev.rot)rot(1);if(st.rotb&&!gp.prev.rotb)rot(-1);if(st.hold&&!gp.prev.hold)holdPiece();if(st.hard&&!gp.prev.hard){gp.nm=T+180;setTimeout(hard,45)}
   const fn={l:()=>move(-1,0),r:()=>move(1,0),d:()=>{if(move(0,1))score+=1}};
   for(const k of["l","r","d"]){if(st[k]&&!over&&!((k==="l"||k==="r")&&T<gp.nm)){if(!gp.prev[k]){fn[k]();gp.hold[k]=0;gp.nx[k]=k==="d"?60:120}else{gp.hold[k]+=dt;if(gp.hold[k]>=gp.nx[k]){fn[k]();gp.nx[k]=gp.hold[k]+(k==="d"?55:45)}}}else gp.hold[k]=0}}
@@ -390,7 +394,7 @@ function end(win){if(over)return;over=true;won=win;holdStop();if(!win)sfx("death
 function start(){$("#ov").classList.remove("show");showGame();play=0;lvl=0;lt=0;sec=-1;mStep=0;if(au)mNext=au.currentTime+.05;$("#spd").textContent=1;$("#gt").textContent="0:00";$("#gt").classList.remove("flash","on");void $("#gt").offsetWidth;$("#gt").classList.add("on");
  $("#mylab").textContent="You · "+($("#nick").value||"Player");g=empty();bag=[];prng=roundSeed?mulb(roundSeed):Math.random;nextId=take();score=0;lines=0;pend=0;streak=0;bfRun=0;comboLog=[];matchStart=performance.now();held=0;canHold=true;counting=false;renderLog();rost=mode==="room"?new Set(["me"]):null;announced=false;for(const k in AC)delete AC[k];won=false;over=false;sawOpp=false;acc=0;spawn();dirty=true;pub();ui();check()}
 function beginRound(fn){if(counting)return;counting=true;ltRem=null;if(mode==="solo"){bots=[];syncOpps([])}if(room&&admin()===myPeer)room.presence({lr:null}).catch(()=>{});showGame();$("#ov").classList.remove("show");$("#gt").classList.remove("on","flash");$("#mylab").textContent="You · "+($("#nick").value||"Player");g=empty();nextId=take();held=0;over=true;score=0;lines=0;pend=0;ui();
- let n=mode==="solo"?3:10;const cd=$("#cd");cd.hidden=false;
+ let n=3;const cd=$("#cd");cd.hidden=false;
  const step=()=>{if(n>0){cd.textContent=n;cd.classList.remove("pop");void cd.offsetWidth;cd.classList.add("pop");sfx(n<=3?"tick3":"tick");n--;cdT=setTimeout(step,1000)}else{cd.hidden=true;counting=false;sfx("go");fn()}};step()}
 function check(){if(over||!room)return;if(targets().length)sawOpp=true;else if(sawOpp)end(true)}
 function ui(){$("#abortbtn").hidden=!(mode==="room"&&room&&!pending&&admin()===myPeer);$("#sc").textContent=score;$("#scw").style.display=g&&over?"":"none";$("#ln").textContent=lines;$("#inc").textContent=pend;const b=$("#pw");b.disabled=true;b.textContent="⚡ Power in "+(5-lines%5)}
@@ -417,7 +421,7 @@ function onPeers(ch){peerList=ch.peers;capSet=new Set(peerList.filter(valid0).so
  if(pending)settle();else if(room){const L=effLock(),mp=peerList.find(p=>p.peer===myPeer),mine=mp&&mp.presence.lock||null;if(L!==mine&&admin()!==myPeer)room.presence({lock:L}).catch(()=>{});const fl=L?1:0;if(fl!==lastL){lastL=fl;if(hub)hub.presence({l:fl}).catch(()=>{})}}
  syncOpps(peerList.filter(p=>!p.isMe&&p.presence&&["play","dead","win"].includes(p.presence.st)).map(p=>({id:p.peer,name:String(p.presence.nick||"Player").slice(0,12),st:p.presence.st,score:clampI(p.presence.score,0,1e7),board:p.presence.board})));
  renderLobby();check();watch()}
-const known=new Set(),myNick=()=>$("#nick").value||"Player";let lastSig="",winsCache={},myAv="",ltRem=null;
+const known=new Set(),myNick=()=>$("#nick").value||"Player";let lastSig="",winsCache={},myAv="",ltRem=null,ltBeep=0;
 const avOk=s=>typeof s==="string"&&s.length<=2600&&/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+\/=]+$/.test(s);
 function monster(c){const svg="<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'><rect width='40' height='40' rx='8' fill='#14161c'/><path d='M9 12l3-8 4 8M24 12l4-8 3 8' fill='"+c+"' stroke='rgba(0,0,0,.45)'/><rect x='5' y='9' width='30' height='27' rx='6' fill='"+c+"' stroke='rgba(0,0,0,.45)'/><rect x='5' y='9' width='30' height='6' rx='3' fill='#fff' fill-opacity='.28'/><circle cx='15' cy='21' r='5' fill='#fff'/><circle cx='26' cy='21' r='5' fill='#fff'/><circle cx='16' cy='22' r='2.3' fill='#111'/><circle cx='25' cy='22' r='2.3' fill='#111'/><path d='M10 17l9 3M31 17l-9 3' stroke='#111' stroke-width='2' stroke-linecap='round'/><rect x='10' y='29' width='20' height='5' rx='2' fill='#2a0a0a'/><path d='M12 29l2 3 2-3M17 29l2 3 2-3M22 29l2 3 2-3M27 29l2 3 2-3' fill='#fff'/></svg>";return"data:image/svg+xml,"+encodeURIComponent(svg)}
 const hashN=q=>{let h=0;for(const ch of String(q))h=(h*31+ch.charCodeAt(0))>>>0;return h};
@@ -444,7 +448,7 @@ function buildLobby(){$("#plist").textContent="";let can=false,wait="";$("#invro
  [...$("#bbtn").children].forEach((b,i)=>b.classList.toggle("on",i===nbots))}
 function renderTimer(){const t=$("#ltimer");if(mode!=="room"||pending){t.hidden=true;return}const ps=peerList.filter(valid),ad=admin(),adp=ps.find(p=>p.peer===ad),im=ad===myPeer,busy=peerList.some(p=>p.presence&&p.presence.st==="play");
  const rem=im?(ltRem||0):(adp?clampI(adp.presence.lr,0,300):0);
- if(!(ps.length>1)||busy||counting||rem<=0){t.hidden=true;return}
+ if(!(ps.length>1)||busy||counting||rem<=0){t.hidden=true;ltBeep=0;return}if(rem<=10&&rem!==ltBeep){ltBeep=rem;sfx("lt")}else if(rem>10)ltBeep=0;
  t.hidden=false;$("#ltt").textContent="⏱ Game starts in "+((rem/60)|0)+":"+String(rem%60).padStart(2,"0");$("#lplus").hidden=!im;$("#lplus").disabled=rem>=300}
 function lobbyTick(){if(!room||pending||mode!=="room"||admin()!==myPeer){ltRem=null;return}
  const ps=peerList.filter(valid),busy=peerList.some(p=>p.presence&&p.presence.st==="play");
@@ -455,17 +459,17 @@ function lobbyTick(){if(!room||pending||mode!=="room"||admin()!==myPeer){ltRem=n
  renderLobby()}
 function hostStart(){if(mode==="solo"){roundSeed=0;beginRound(startSolo);return true}if(mode!=="room"||!room||counting)return false;
  if(peerList.some(p=>valid(p)&&p.presence.ver!==VER)){msg("Someone is on an older version. Ask them to refresh the page first.");return false}
- const seed=(Math.random()*4294967294+1)>>>0;roundSeed=seed;room.emit("start",{seed,ver:VER,secs:10}).catch(()=>{});beginRound(start);return true}
+ const seed=(Math.random()*4294967294+1)>>>0;roundSeed=seed;room.emit("start",{seed,ver:VER,secs:3}).catch(()=>{});beginRound(start);return true}
 function showCard(id){const p=peerList.find(q=>q.peer===id);if(!p||!valid(p))return;const nm=pn(p),b=$("#pcb");b.textContent="";
  mkCard({name:nm,seed:p.peer,av:p.peer===myPeer&&myAv?myAv:p.presence.av,crown:p.peer===admin(),me:p.peer===myPeer,wins:winsCache[nm.toLowerCase()]||0,sub:stTxt(p.presence.st),st:stCls(p.presence.st)},b);$("#pcard").hidden=false}
 function setAv(u){myAv=u;if(room)room.presence({av:u||null}).catch(()=>{});lastSig="";renderLobby()}
 function hubSet(r){if(hub)hub.presence(r?{r}:{r:"",nm:null,nt:null,l:0}).catch(()=>{})}
-function renderRooms(){const box=$("#rl");if(box.hidden)return;const m={};const lk={};hubPeers.forEach(p=>{const r=p.presence&&p.presence.r;if(r){m[r]=(m[r]||0)+1;if(p.presence.l)lk[r]=1}});box.textContent="";const ks=Object.keys(m).sort();if(!ks.length){box.textContent="No active rooms right now.";return}
+function renderRooms(){const box=$("#rl");if(box.hidden)return;const m={};const lk={};hubPeers.forEach(p=>{const r=p.presence&&p.presence.r;if(r&&!isBad(r)){m[r]=(m[r]||0)+1;if(p.presence.l)lk[r]=1}});box.textContent="";const ks=Object.keys(m).sort();if(!ks.length){box.textContent="No active rooms right now.";return}
  ks.forEach(k=>{const b=document.createElement("button");b.className="alt rr";const a=document.createElement("span");a.textContent=(lk[k]?"🔒 ":"")+String(k).slice(0,12);const c=document.createElement("span");c.textContent=m[k]+(m[k]===1?" player":" players");b.append(a,c);b.onclick=()=>{$("#code").value=k;join()};box.append(b)})}
 let hold=null;
 function holdStart(dir){holdStop();move(dir,0);const h={dir};h.t=setTimeout(()=>{h.i=setInterval(()=>move(dir,0),45)},110);hold=h}
 function holdStop(){if(hold){clearTimeout(hold.t);clearInterval(hold.i);hold=null}}
-const pn=p=>String(p.presence&&p.presence.nick||"Player").replace(/[^\p{L}\p{N} _.!']/gu,"").slice(0,12)||"Player";
+const pn=p=>{const n=String(p.presence&&p.presence.nick||"Player").replace(/[^\p{L}\p{N} _.!']/gu,"").slice(0,12)||"Player";return isBad(n)?"Player":n};
 function announce(win){const nm=$("#nick").value||"Player";
  if(mode==="solo")chatLine("Result",nbots&&win?"You beat "+(bots.length===1?"the bot":"all "+bots.length+" bots")+" with "+score+" points!":"Solo run over: "+score+" points, "+lines+" lines.");
  else if(room&&rost&&rost.size>1)watch();
@@ -484,8 +488,9 @@ function renderVote(yes,need,left){const b=$("#vb");if(!vt){b.hidden=true;return
 async function leaveRoom(t){if(vt){clearInterval(vt.tm);vt=null;renderVote()}pending=false;needPw=false;lastL=-1;curNick="";winsCache={};known.clear();ltRem=null;lastSig="";memPrev=new Set();memInit=false;const r=room;room=null;mode="idle";peerList=[];over=true;syncOpps([]);$("#cin").disabled=true;$("#csend").disabled=true;$("#cin").placeholder="Join a room to chat";hubSet("");showLobby();if(t)msg(t);renderLobby();if(r)try{await r.leave()}catch(e){}}
 async function join(){
  const code=$("#code").value.toLowerCase().replace(/[^a-z0-9]/g,"").slice(0,12);if(!code){msg("Type a room name first, like stackloft.");return}
+ if(isBad(code)){msg("That room name isn’t allowed. Pick a different one.");$("#code").style.borderColor="#e5484d";$("#code").focus();return}
  if(!cap){msg("Multiplayer is still connecting. Give it a few seconds, or play solo while you wait.");return}
- const nn=normName($("#nick").value);if(!nn||RES.test(nn))return nameErr("Pick a different name. Use letters and numbers, and avoid reserved words like Room or Bot.");if(hub&&nameTaken(nn))return nameErr("The name “"+nn+"” is already in use in a lobby. Pick another name.");$("#nick").value=nn;msg("Joining…");
+ const nn=normName($("#nick").value);if(nn&&isBad(nn))return nameErr("That name isn’t allowed. Pick a different one.");if(!nn||RES.test(nn))return nameErr("Pick a different name. Use letters and numbers, and avoid reserved words like Room or Bot.");if(hub&&nameTaken(nn))return nameErr("The name “"+nn+"” is already in use in a lobby. Pick another name.");$("#nick").value=nn;msg("Joining…");
  try{if(room){const r=room;room=null;try{await r.leave()}catch(e){}}
   syncOpps([]);over=true;curCode=code;mode="room";memPrev=new Set();memInit=false;
   const rm=await cap.join("bf-"+code);room=rm;
@@ -578,7 +583,7 @@ let chatT=0;function chatSend(){const i=$("#cin"),t=i.value.trim();if(!t||!room|
 $("#chatbtn").onclick=()=>{const o=document.body.classList.toggle("chatopen");$("#chatbtn").classList.remove("unread");$("#chatbtn").textContent=o?"✕":"💬";$("#chatbtn").setAttribute("aria-label",o?"Close chat":"Open chat");posChat()};
 let idleN=0;setInterval(()=>{if(mode==="room"&&room&&!gvEl.hidden&&over&&!counting&&!targets().length){if(++idleN>=10){idleN=0;backToLobby()}}else idleN=0},1000);
 $("#csend").onclick=chatSend;$("#cin").addEventListener("keydown",e=>{if(e.key==="Enter")chatSend()});
-const act={L:()=>move(-1,0),R:()=>move(1,0),D:()=>{if(move(0,1))score+=1;ui()},C:()=>rot(1),H:hard,S:holdPiece,U:hard,Y:hard,A:()=>rot(1),B:()=>rot(-1),X:holdPiece};
+const act={L:()=>move(-1,0),R:()=>move(1,0),D:()=>{if(move(0,1))score+=1;ui()},C:()=>rot(1),H:hard,S:holdPiece,U:()=>{},Y:holdPiece,A:hard,B:()=>rot(1),X:()=>rot(-1)};
 addEventListener("keydown",e=>{if(e.target.tagName==="INPUT"&&e.target.type!=="checkbox")return;const k=e.key;
  const m={ArrowLeft:"L",ArrowRight:"R",ArrowDown:"D",ArrowUp:"C",x:"C",X:"C"," ":"H",Shift:"S",c:"S",C:"S"}[k];
  if(k==="z"||k==="Z"){rot(-1);e.preventDefault();return}
@@ -590,8 +595,8 @@ $("#lstart").onclick=()=>{hostStart()};
 $("#solo").onclick=()=>{if(room)leaveRoom();mode="solo";showLobby();msg("Solo practice. Pick your bots and press Start.");renderLobby()};
 $("#rooms").onclick=()=>{const b=$("#rl");b.hidden=!b.hidden;$("#rooms").textContent=b.hidden?"Rooms":"Hide rooms";renderRooms()};
 $("#nick").addEventListener("input",()=>{$("#mylab").textContent="You · "+($("#nick").value||"Player");if(mode==="solo")renderLobby()});
-$("#nick").addEventListener("change",()=>{const nn=normName($("#nick").value);if(!room||!curNick){$("#nick").value=nn||"Player";return}if(!nn||RES.test(nn)||nameTaken(nn)){$("#nick").value=curNick;msg("That name isn’t available, so your name stays “"+curNick+"”.");return}$("#nick").value=nn;curNick=nn;myNt=Date.now();room.presence({nick:nn}).catch(()=>{});if(hub)hub.presence({nm:nn,nt:myNt}).catch(()=>{})});
-$("#nick").addEventListener("input",()=>{$("#nick").style.borderColor=""});
+$("#nick").addEventListener("change",()=>{const nn=normName($("#nick").value);if(nn&&isBad(nn)){$("#nick").value=curNick||"Player";nameErr("That name isn’t allowed. Pick a different one.");return}if(!room||!curNick){$("#nick").value=nn||"Player";return}if(!nn||RES.test(nn)||nameTaken(nn)){$("#nick").value=curNick;msg("That name isn’t available, so your name stays “"+curNick+"”.");return}$("#nick").value=nn;curNick=nn;myNt=Date.now();room.presence({nick:nn}).catch(()=>{});if(hub)hub.presence({nm:nn,nt:myNt}).catch(()=>{})});
+$("#nick").addEventListener("input",()=>{$("#nick").style.borderColor=""});$("#code").addEventListener("input",()=>{$("#code").style.borderColor=""});
 for(let i=0;i<=4;i++){const b=document.createElement("button");b.className="alt";b.textContent=i;b.onclick=()=>{nbots=i;renderLobby()};$("#bbtn").append(b)}
 
 /* resize own board */
@@ -615,7 +620,7 @@ function bassDrop(){if(!au||mute||vol===0||au.state!=="running")return;const now
  const r=au.createOscillator(),rg=au.createGain();r.type="triangle";r.frequency.setValueAtTime(200,now);r.frequency.exponentialRampToValueAtTime(1200,t);rg.gain.setValueAtTime(.0001,now);rg.gain.linearRampToValueAtTime(.12,t-.02);rg.gain.linearRampToValueAtTime(.0001,t);r.connect(rg);rg.connect(mg);r.start(now);r.stop(t+.02)}
 const sfxT={};
 function sfx(k){if(!au||mute||vol===0||au.state!=="running")return;const n=performance.now();if(n-(sfxT[k]||0)<350)return;sfxT[k]=n;const t=au.currentTime+.02;
- if(k==="bell"){tone("sine",79,t,.9,.13);tone("sine",91,t,.35,.03);tone("sine",72,t+.32,1.2,.13);tone("sine",84,t+.32,.5,.03)}else if(k==="bye"){tone("triangle",67,t,.5,.09);tone("triangle",62,t+.24,.6,.08);tone("triangle",55,t+.48,1,.08)}else if(k==="chat"){tone("sine",81,t,.16,.12);tone("sine",86,t+.08,.22,.1)}else if(k==="tick"||k==="tick3"){tone("triangle",k==="tick3"?81:74,t,.14,k==="tick3"?.3:.2)}else if(k==="go"){[76,79,84,88].forEach((m,i)=>tone("triangle",m,t+i*.06,.4,.28))}else if(k==="power"){const o=au.createOscillator(),gn=au.createGain();o.type="sawtooth";o.frequency.setValueAtTime(220,t);o.frequency.exponentialRampToValueAtTime(1500,t+.22);gn.gain.setValueAtTime(.0001,t);gn.gain.linearRampToValueAtTime(.3,t+.02);gn.gain.exponentialRampToValueAtTime(.0001,t+.3);o.connect(gn);gn.connect(mg);o.start(t);o.stop(t+.32);tone("square",91,t+.2,.2,.18)}
+ if(k==="bell"){tone("sine",79,t,.9,.13);tone("sine",91,t,.35,.03);tone("sine",72,t+.32,1.2,.13);tone("sine",84,t+.32,.5,.03)}else if(k==="bye"){tone("triangle",67,t,.5,.09);tone("triangle",62,t+.24,.6,.08);tone("triangle",55,t+.48,1,.08)}else if(k==="chat"){tone("sine",81,t,.16,.12);tone("sine",86,t+.08,.22,.1)}else if(k==="lt"){const f=ltBeep<=3;tone("sine",f?86:81,t,.09,f?.07:.045)}else if(k==="tick"||k==="tick3"){tone("triangle",k==="tick3"?81:74,t,.14,k==="tick3"?.3:.2)}else if(k==="go"){[76,79,84,88].forEach((m,i)=>tone("triangle",m,t+i*.06,.4,.28))}else if(k==="power"){const o=au.createOscillator(),gn=au.createGain();o.type="sawtooth";o.frequency.setValueAtTime(220,t);o.frequency.exponentialRampToValueAtTime(1500,t+.22);gn.gain.setValueAtTime(.0001,t);gn.gain.linearRampToValueAtTime(.3,t+.02);gn.gain.exponentialRampToValueAtTime(.0001,t+.3);o.connect(gn);gn.connect(mg);o.start(t);o.stop(t+.32);tone("square",91,t+.2,.2,.18)}
  else if(k==="death"){
   if(!nb2){nb2=au.createBuffer(1,au.sampleRate*2|0,au.sampleRate);const d=nb2.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1}
   const nz=(t0,dur,f0,f1,v,ty)=>{const sr=au.createBufferSource(),f=au.createBiquadFilter(),gn=au.createGain();sr.buffer=nb2;sr.loop=true;f.type=ty||"lowpass";f.frequency.setValueAtTime(f0,t0);f.frequency.exponentialRampToValueAtTime(f1,t0+dur);gn.gain.setValueAtTime(.0001,t0);gn.gain.linearRampToValueAtTime(v,t0+Math.min(.15,dur*.3));gn.gain.exponentialRampToValueAtTime(.0001,t0+dur);sr.connect(f);f.connect(gn);gn.connect(mg);sr.start(t0,Math.random()*.5);sr.stop(t0+dur+.05)};
