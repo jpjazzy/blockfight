@@ -47,6 +47,10 @@ body{touch-action:manipulation}
 .how{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:6px 18px;margin-top:8px;font-size:13px;color:var(--mu)}.how b{color:var(--fg);display:block}
 .gp{padding:2px 7px;font-size:16px;margin-bottom:3px}.gp.on{outline:2px solid #33b249}
 #gpinfo{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:8;width:min(340px,92vw);box-shadow:0 8px 30px rgba(0,0,0,.45)}
+#remap{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:10;width:min(420px,94vw);max-height:90vh;overflow:auto;box-shadow:0 8px 30px rgba(0,0,0,.5)}
+#remap .rmtab.on{outline:2px solid var(--ac)} #rmlist{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;align-items:center;margin-top:10px;font-size:13px}
+#rmlist .ch{display:flex;flex-wrap:wrap;gap:4px} #rmlist .chip{display:inline-flex;align-items:center;gap:4px;padding:3px 4px 3px 8px;border-radius:12px;background:var(--bd);font-weight:700}
+#rmlist .chip button{padding:0 6px;border-radius:10px;background:transparent;color:var(--mu);font-size:13px} #rmlist .add{padding:3px 9px;border-radius:12px;font-size:12px} #rmlist .add.wait{outline:2px solid #f2c400}
 #gpinfo .lg{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;font-size:13px;margin-top:6px}#gpinfo .lg b{color:var(--ac)}
 #cd{position:absolute;inset:12px;display:flex;align-items:center;justify-content:center;font:900 calc(var(--bh)*.3)/1 system-ui,sans-serif;color:#fff;text-shadow:0 4px 0 rgba(0,0,0,.5),0 0 28px rgba(255,255,255,.35);background:rgba(10,10,14,.4);border-radius:4px;z-index:3;pointer-events:none}
 #cd.pop{animation:cdp 1s ease-out}@keyframes cdp{0%{transform:scale(1.7);opacity:0}15%{opacity:1}100%{transform:scale(1);opacity:.9}}
@@ -189,7 +193,7 @@ h1{text-align:center}#logo{margin:0 auto 6px}
  <summary style="cursor:pointer;font-weight:700">📖 How to play <span class="stat" style="display:inline">(click to hide)</span></summary>
  <div class="how">
   <div><b>Goal</b>Be the last one standing. Clear lines to send garbage rows to your opponents.</div>
-  <div><b>Controls</b><span class="kb">← → move, ↑ or X rotate, Z rotate back, ↓ soft drop, Space hard drop, Shift or C hold a piece. Controllers work too (click 🎮 by the board).</span><span class="tc">Use the on screen pad: ◀ ▶ move, ▼ soft drop, ▲ does nothing, A hard drop, B rotate clockwise, X rotate counterclockwise, Y hold a piece. Hold ◀ ▶ ▼ to repeat.</span></div>
+  <div><b>Controls</b><span class="kb"><span id="kbtxt">← → move, ↑ or X rotate, Z rotate back, ↓ soft drop, Space hard drop, Shift or C hold a piece</span>. Controllers work too (click 🎮 by the board).</span><span class="tc">Use the on screen pad: ◀ ▶ move, ▼ soft drop, ▲ or Y hard drop, A rotate, B rotate back, X hold a piece. Hold ◀ ▶ ▼ to repeat.</span><button id="rmbtn" class="alt" style="display:block;margin-top:6px;padding:5px 10px">🎛 Remap controls</button></div>
   <div><b>Combos</b>Clear lines with back to back pieces and your lines, score and garbage multiply by your streak.</div>
   <div><b>Grey rows</b>Fill the gap in a garbage row and it clears like any other line, with bonus garbage sent back. A 4 line Blockfight also blasts away one extra garbage row.</div>
   <div><b>Powers</b>Every 5 lines sends 1 garbage row to a random opponent (2 rows from a phone). A 4 line Blockfight hits everyone with a row plus a random bonus: an extra row, or a flipped board with reversed controls for 8 seconds. It also clears a pure grey garbage row from your own stack. Making two Blockfights in a row also scrambles every opponent's board.</div>
@@ -211,11 +215,11 @@ h1{text-align:center}#logo{margin:0 auto 6px}
     <div id="rz" title="Drag to resize" aria-label="Drag to resize the board"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M20 8L8 20M20 14l-6 6M20 2L2 20" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg></div>
    </div>
    <label class="lock"><input type="checkbox" id="lk"> Lock board size</label>
-   <div id="pad"><div class="dp"><button data-k="U" aria-label="Up (does nothing)">▲</button><button data-k="L" aria-label="Left">◀</button><button data-k="R" aria-label="Right">▶</button><button data-k="D" aria-label="Soft drop">▼</button></div><div class="fb"><button data-k="Y" aria-label="Hold piece">Y</button><button data-k="X" aria-label="Rotate counterclockwise">X</button><button data-k="B" aria-label="Rotate clockwise">B</button><button data-k="A" aria-label="Hard drop">A</button></div></div>
+   <div id="pad"><div class="dp"><button data-k="U" aria-label="Hard drop">▲</button><button data-k="L" aria-label="Left">◀</button><button data-k="R" aria-label="Right">▶</button><button data-k="D" aria-label="Soft drop">▼</button></div><div class="fb"><button data-k="Y" aria-label="Hard drop">Y</button><button data-k="X" aria-label="Hold piece">X</button><button data-k="B" aria-label="Rotate back">B</button><button data-k="A" aria-label="Rotate">A</button></div></div>
   </div>
   <div class="side">
    <div class="pr"><div class="stat keep">Next</div><canvas id="nx" width="120" height="120"></canvas></div>
-   <div class="pr"><div class="stat keep">Hold (Shift)</div><canvas id="hd" width="120" height="120"></canvas></div>
+   <div class="pr"><div class="stat keep" id="holdlab">Hold (Shift)</div><canvas id="hd" width="120" height="120"></canvas></div>
    <div class="stat" id="scw" style="display:none">Score<b id="sc">0</b></div>
    <div class="stat">Lines<b id="ln">0</b></div>
    <div class="stat">Speed<b id="spd">1</b></div>
@@ -226,7 +230,7 @@ h1{text-align:center}#logo{margin:0 auto 6px}
   </div>
   <div id="opps"></div>
  </div>
- <p class="stat keysp" style="text-align:center">Keys: ← → move, ↑ or X rotate, Z rotate back, ↓ soft drop, Space hard drop, Shift or C hold a piece</p>
+ <p class="stat keysp" style="text-align:center">Keys: <span id="kbtxt2">← → move, ↑ or X rotate, Z rotate back, ↓ soft drop, Space hard drop, Shift or C hold a piece</span></p>
 </section>
 
 <footer id="copy">© Jeremy Lanning 2026</footer>
@@ -240,7 +244,7 @@ h1{text-align:center}#logo{margin:0 auto 6px}
  <div class="row in"><input id="cin" maxlength="200" placeholder="Join a room to chat" disabled style="flex:1;width:auto;min-width:0"><button id="csend" disabled>Send</button></div>
 </aside>
 
-<div id="gpinfo" class="panel" hidden><div class="row" style="justify-content:space-between;margin-bottom:6px"><b>Xbox controller controls</b><button id="gpx" class="alt">Close</button></div>
+<div id="gpinfo" class="panel" hidden><div class="row" style="justify-content:space-between;margin-bottom:6px"><b>Xbox controller controls</b><span><button id="gprm" class="alt">Remap</button> <button id="gpx" class="alt">Close</button></span></div>
  <svg viewBox="0 0 360 230" width="100%" role="img" aria-label="Xbox One controller layout">
   <rect x="62" y="6" width="58" height="22" rx="10" fill="#555"/><rect x="240" y="6" width="58" height="22" rx="10" fill="#555"/>
   <rect x="50" y="30" width="86" height="16" rx="8" fill="#777"/><rect x="224" y="30" width="86" height="16" rx="8" fill="#777"/>
@@ -254,8 +258,13 @@ h1{text-align:center}#logo{margin:0 auto 6px}
   <circle cx="268" cy="68" r="11" fill="#f9b800"/><circle cx="248" cy="88" r="11" fill="#1c6fe6"/><circle cx="288" cy="88" r="11" fill="#d9272e"/><circle cx="268" cy="108" r="11" fill="#3aa53a"/>
   <g font-size="12" font-weight="800" fill="#fff" text-anchor="middle"><text x="268" y="72" fill="#111">Y</text><text x="248" y="92">X</text><text x="288" y="92">B</text><text x="268" y="112">A</text></g>
  </svg>
- <div class="lg"><b>Left stick or D-pad ◀ ▶</b><span>Move</span><b>Stick or D-pad ▼</b><span>Soft drop</span><b>A, RB, RT</b><span>Hard drop</span><b>B</b><span>Rotate clockwise</span><b>X</b><span>Rotate counterclockwise</span><b>Y, LB, LT</b><span>Hold piece</span><b>D-pad ▲</b><span>Does nothing</span></div>
+ <div class="lg" id="gplg"><b>Left stick or D-pad ◀ ▶</b><span>Move</span><b>Stick or D-pad ▼</b><span>Soft drop</span><b>A, RB, RT</b><span>Hard drop</span><b>B</b><span>Rotate clockwise</span><b>X</b><span>Rotate counterclockwise</span><b>Y, LB, LT</b><span>Hold piece</span><b>D-pad ▲</b><span>Does nothing</span></div>
  <div id="gpstat" class="stat" style="margin-top:8px">No controller detected yet. Press any button on it.</div></div>
+<div id="remap" class="panel" hidden><div class="row" style="justify-content:space-between;margin-bottom:6px"><b>Remap controls</b><button id="rmx" class="alt">Close</button></div>
+ <div class="row" style="gap:6px"><button id="rmkb" class="alt rmtab">⌨ Keyboard</button><button id="rmgp" class="alt rmtab">🎮 Controller</button></div>
+ <div id="rmlist"></div>
+ <div id="rmst" class="stat" style="margin-top:8px;min-height:18px"></div>
+ <div class="row" style="justify-content:space-between;margin-top:8px"><span class="stat">Saved on this device.</span><button id="rmreset" class="alt">Reset to defaults</button></div></div>
 <div id="pcard" class="panel" hidden><div class="row" style="justify-content:space-between;margin-bottom:8px"><b>Player</b><button id="pcx" class="alt">Close</button></div><div id="pcb"></div></div>
 <div id="lg" class="panel" hidden><div class="row" style="justify-content:space-between;margin-bottom:6px"><b>Power log</b><button id="lgx" class="alt">Close</button></div><div id="lgl"></div></div>
 <div id="sndw"><button id="snd" aria-label="Mute music" title="Music"></button><input type="range" id="vol" min="0" max="100" value="50" aria-label="Music volume"></div>
@@ -278,13 +287,13 @@ const shufP=a=>{for(let i=a.length-1;i>0;i--){const j=(prng()*(i+1))|0;[a[i],a[j
 function take(){if(!bag.length)bag=shufP([1,2,3,4,5,6,7]);return bag.pop()}
 function hitG(G,m,x,y){for(let j=0;j<m.length;j++)for(let i=0;i<m[j].length;i++){if(!m[j][i])continue;const a=x+i,b=y+j;if(a<0||a>=W||b>=H||(b>=0&&G[b][a]))return true}return false}
 const hit=(m,x,y)=>hitG(g,m,x,y);
-function spawn(f){lt=0;const id=f||nextId;if(!f)nextId=take();const m=SHP[id].map(r=>r.slice());cur={id,m,x:(W-m[0].length)>>1,y:0};if(hit(cur.m,cur.x,cur.y))end(false)}
+function spawn(f){lt=0;const id=f||nextId;if(!f)nextId=take();const m=SHP[id].map(r=>r.slice());let bot=0;m.forEach((r,j)=>{if(r.some(v=>v))bot=j});cur={id,m,x:(W-m[0].length)>>1,y:-bot};while(hit(cur.m,cur.x,cur.y)&&cur.y>-4)cur.y--}
 function move(dx,dy){if(dx&&Date.now()<flipUntil)dx=-dx;if(over||hit(cur.m,cur.x+dx,cur.y+dy))return false;cur.x+=dx;cur.y+=dy;dirty=true;return true}
 function rot(d){if(over)return;if(Date.now()<flipUntil)d=-d;let m=cur.m;m=d>0?m[0].map((_,i)=>m.map(r=>r[i]).reverse()):m[0].map((_,i)=>m.map(r=>r[r.length-1-i]));for(const k of[0,-1,1,-2,2])if(!hit(m,cur.x+k,cur.y)){cur.m=m;cur.x+=k;dirty=true;return}for(const k of[0,-1,1,-2,2])if(!hit(m,cur.x+k,cur.y-1)){cur.m=m;cur.x+=k;cur.y--;lt=0;dirty=true;return}}
 function hard(){if(over)return;while(move(0,1))score+=2;lock()}
 function holdPiece(){if(over||!canHold)return;canHold=false;const id=cur.id;if(held){const h=held;held=id;spawn(h)}else{held=id;spawn()}dirty=true}
 let bfUsed=false,bfRun=0,bfHit=false;
-function dropGrey(){for(let y=H-1;y>=0;y--){const r=g[y];if(r.some(v=>v===8)&&r.every(v=>v===0||v===8)){g.splice(y,1);g.unshift(Array(W).fill(0));return true}}return false}
+function dropGrey(){for(let y=H-1;y>=0;y--){const r=g[y];if(r.some(v=>v===8)&&r.every(v=>v===0||v===8)){g.splice(y,1);g.unshift(Array(W).fill(0));clrN++;return true}}return false}
 function fall(){let any=false;for(let guard=0;guard<H*2;guard++){const seen=Array.from({length:H},()=>Array(W).fill(false)),mv=[];
  for(let y=0;y<H;y++)for(let x=0;x<W;x++){const c=g[y][x];if(c<1||c>7||seen[y][x])continue;const comp=[],st=[[x,y]];seen[y][x]=true;let sup=false;
   while(st.length){const[a,b]=st.pop();comp.push([a,b]);if(b+1>=H||(g[b+1][a]&&g[b+1][a]!==c))sup=true;
@@ -292,19 +301,22 @@ function fall(){let any=false;for(let guard=0;guard<H*2;guard++){const seen=Arra
   if(!sup)mv.push({comp,c})}
  if(!mv.length)break;any=true;for(const m of mv)for(const[a,b]of m.comp)g[b][a]=0;for(const m of mv)for(const[a,b]of m.comp)g[b+1][a]=m.c}return any}
 function clearPass(first){let n=0;const cl=[];for(let y=H-1;y>=0;y--)if(g[y].every(v=>v)){cl.push({y:y-n,row:g[y].slice()});g.splice(y,1);g.unshift(Array(W).fill(0));n++;y++}
- if(!n)return false;
+ if(!n)return false;clrN+=n;
  streak++;gb=cl.filter(c=>c.row.filter(v=>v===8).length>=W-1).length;burst(cl,n,streak,gb);
  const e=n*streak+gb;lines+=e;score+=[0,100,300,500,800][n]*streak+100*gb;
  let a=n===4?1:Math.min(8,[0,0,1,2,4][n]*streak+gb);const a0=a;if(n===4&&room)room.emit("combo",{n,sk:streak,gb,a:a0}).catch(()=>{});const off=Math.min(pend,a);pend-=off;a-=off;if(a)send("rows",a);
  if(n===4){sfx("combo");autoPower(true,Math.random()<.5?"flip":"extra");bfHit=true;bfRun++;if(bfRun>=2){if(send("scramble",1,1,true))toast("🌀 Blockfight x"+bfRun+"! Every opponent board is scrambled")}if(!bfUsed&&(bfUsed=true)&&dropGrey())toast("💥 Blockfight blasted a garbage row")}if(Math.floor(lines/5)>Math.floor((lines-e)/5))autoPower();return true}
-function lock(){
- cur.m.forEach((r,j)=>r.forEach((v,i)=>{if(v&&cur.y+j>=0)g[cur.y+j][cur.x+i]=v}));
- bfUsed=false;bfHit=false;let any=false;for(let pass=0;pass<14;pass++){if(!clearPass(pass===0))break;any=true;fall()}if(!bfHit)bfRun=0;
+let clrN=0;
+function lock(){const ovf=[];
+ cur.m.forEach((r,j)=>r.forEach((v,i)=>{if(!v)return;const y=cur.y+j;if(y>=0)g[y][cur.x+i]=v;else ovf.push([cur.x+i,y,v])}));
+ clrN=0;bfUsed=false;bfHit=false;let any=false;for(let pass=0;pass<14;pass++){if(!clearPass(pass===0))break;any=true;fall()}if(!bfHit)bfRun=0;
+ /* blocks that locked above the board only survive if line clears pulled them back down */
+ if(ovf.length){let dead=false;for(const[x,y,v]of ovf){const ny=y+clrN;if(ny<0||g[ny][x])dead=true;else g[ny][x]=v}if(dead){dirty=true;end(false);return}}
  if(!any){streak=0;if(pend){garbage(pend);pend=0}}
  dirty=true;canHold=true;if(!over)spawn();ui()}
 function garbage(k){for(let n=0;n<k&&!over;n++){if(g[0].some(v=>v)){end(false);return}g.shift();const r=Array(W).fill(8);r[rnd(W)]=0;g.push(r)}
- while(!over&&hit(cur.m,cur.x,cur.y)){cur.y--;if(cur.y<-2)end(false)}}
-function scramble(){for(const r of g)shuf(r);fall();while(!over&&hit(cur.m,cur.x,cur.y)){cur.y--;if(cur.y<-2)end(false)}dirty=true}
+ while(!over&&hit(cur.m,cur.x,cur.y)){cur.y--;if(cur.y<-5)end(false)}}
+function scramble(){for(const r of g)shuf(r);fall();while(!over&&hit(cur.m,cur.x,cur.y)){cur.y--;if(cur.y<-5)end(false)}dirty=true}
 
 /* ---------- bots ---------- */
 const DIFF={easy:{iv:1.7,err:.4,sp:6,min:420},medium:{iv:1,err:.12,sp:3,min:240},hard:{iv:.6,err:.04,sp:2,min:150},insane:{iv:.35,err:0,sp:1,min:80}};
@@ -342,7 +354,8 @@ function checkDup(){if(!room||!curNick)return;const me=hubPeers.find(p=>p.isMe&&
 function padPoll(dt){const ps=navigator.getGamepads?navigator.getGamepads():[];let p=null;for(const q of ps)if(q&&q.connected){p=q;break}
  if(gp.on!==!!p){gp.on=!!p;$("#gpbtn").classList.toggle("on",!!p);$("#gpstat").textContent=p?"Controller connected: "+String(p.id).slice(0,48):"No controller detected yet. Press any button on it."}
  if(!p)return;const b=i=>!!(p.buttons[i]&&p.buttons[i].pressed),ax=p.axes[0]||0,ay=p.axes[1]||0;
- const st={l:b(14)||ax<-.5,r:b(15)||ax>.5,d:b(13)||ay>.6,rot:b(1),rotb:b(2),hold:b(3)||b(4)||b(6),hard:b(0)||b(5)||b(7)};
+ if(remapping){gp.prev={};return}const gin=id=>id[0]==="b"?b(+id.slice(1)):id==="sl"?ax<-.5:id==="sr"?ax>.5:id==="sd"?ay>.6:id==="su"?ay<-.85:false,on=a=>GP[a].some(gin);
+ const st={l:on("L"),r:on("R"),d:on("D"),rot:on("CW"),rotb:on("CCW"),hold:on("S"),hard:on("H")};
  if(!over){if(st.rot&&!gp.prev.rot)rot(1);if(st.rotb&&!gp.prev.rotb)rot(-1);if(st.hold&&!gp.prev.hold)holdPiece();if(st.hard&&!gp.prev.hard){gp.nm=T+180;setTimeout(hard,45)}
   const fn={l:()=>move(-1,0),r:()=>move(1,0),d:()=>{if(move(0,1))score+=1}};
   for(const k of["l","r","d"]){if(st[k]&&!over&&!((k==="l"||k==="r")&&T<gp.nm)){if(!gp.prev[k]){fn[k]();gp.hold[k]=0;gp.nx[k]=k==="d"?60:120}else{gp.hold[k]+=dt;if(gp.hold[k]>=gp.nx[k]){fn[k]();gp.nx[k]=gp.hold[k]+(k==="d"?55:45)}}}else gp.hold[k]=0}}
@@ -583,12 +596,32 @@ let chatT=0;function chatSend(){const i=$("#cin"),t=i.value.trim();if(!t||!room|
 $("#chatbtn").onclick=()=>{const o=document.body.classList.toggle("chatopen");$("#chatbtn").classList.remove("unread");$("#chatbtn").textContent=o?"✕":"💬";$("#chatbtn").setAttribute("aria-label",o?"Close chat":"Open chat");posChat()};
 let idleN=0;setInterval(()=>{if(mode==="room"&&room&&!gvEl.hidden&&over&&!counting&&!targets().length){if(++idleN>=10){idleN=0;backToLobby()}}else idleN=0},1000);
 $("#csend").onclick=chatSend;$("#cin").addEventListener("keydown",e=>{if(e.key==="Enter")chatSend()});
-const act={L:()=>move(-1,0),R:()=>move(1,0),D:()=>{if(move(0,1))score+=1;ui()},C:()=>rot(1),H:hard,S:holdPiece,U:()=>{},Y:holdPiece,A:hard,B:()=>rot(1),X:()=>rot(-1)};
-addEventListener("keydown",e=>{if(e.target.tagName==="INPUT"&&e.target.type!=="checkbox")return;const k=e.key;
- const m={ArrowLeft:"L",ArrowRight:"R",ArrowDown:"D",ArrowUp:"C",x:"C",X:"C"," ":"H",Shift:"S",c:"S",C:"S"}[k];
- if(k==="z"||k==="Z"){rot(-1);e.preventDefault();return}
- if(m&&!over){if(m==="L"||m==="R"){if(!e.repeat)holdStart(m==="L"?-1:1)}else act[m]();e.preventDefault()}});
-addEventListener("keyup",e=>{if(hold&&((e.key==="ArrowLeft"&&hold.dir<0)||(e.key==="ArrowRight"&&hold.dir>0)))holdStop()});
+const act={L:()=>move(-1,0),R:()=>move(1,0),D:()=>{if(move(0,1))score+=1;ui()},C:()=>rot(1),H:hard,S:holdPiece,U:hard,Y:hard,A:()=>rot(1),B:()=>rot(-1),X:holdPiece};
+/* ---------- remappable controls ---------- */
+const RACTS=[["L","Move left"],["R","Move right"],["D","Soft drop"],["CW","Rotate"],["CCW","Rotate back"],["H","Hard drop"],["S","Hold piece"]];
+const DEF_KB={L:["ArrowLeft"],R:["ArrowRight"],D:["ArrowDown"],CW:["ArrowUp","x"],CCW:["z"],H:[" "],S:["Shift","c"]};
+const DEF_GP={L:["b14","sl"],R:["b15","sr"],D:["b13","sd"],CW:["b0"],CCW:["b1"],H:["b12","su","b3","b5","b7"],S:["b2","b4","b6"]};
+const GPN={b0:"A",b1:"B",b2:"X",b3:"Y",b4:"LB",b5:"RB",b6:"LT",b7:"RT",b8:"View",b9:"Menu",b10:"Left stick click",b11:"Right stick click",b12:"D-pad ▲",b13:"D-pad ▼",b14:"D-pad ◀",b15:"D-pad ▶",sl:"Stick ◀",sr:"Stick ▶",sd:"Stick ▼",su:"Stick ▲"};
+const KBN={ArrowLeft:"←",ArrowRight:"→",ArrowUp:"↑",ArrowDown:"↓"," ":"Space",Control:"Ctrl",Escape:"Esc"};
+const cloneB=o=>{const r={};for(const[a]of RACTS)r[a]=(o[a]||[]).slice();return r};
+let KB=cloneB(DEF_KB),GP=cloneB(DEF_GP),remapping=null;
+try{const sv=JSON.parse(localStorage.getItem("bf-binds-v1")||"null");if(sv&&sv.kb&&sv.gp){for(const[a]of RACTS){if(Array.isArray(sv.kb[a]))KB[a]=sv.kb[a].filter(x=>typeof x==="string"&&x.length<20).slice(0,4);if(Array.isArray(sv.gp[a]))GP[a]=sv.gp[a].filter(x=>x in GPN).slice(0,6)}}}catch(e){}
+const saveB=()=>{try{localStorage.setItem("bf-binds-v1",JSON.stringify({kb:KB,gp:GP}))}catch(e){}};
+const normK=k=>k.length===1?k.toLowerCase():k;
+const kName=k=>KBN[k]||(k.length===1?k.toUpperCase():k);
+const keyAct=k=>{const n=normK(k);for(const[a]of RACTS)if(KB[a].includes(n))return a;return null};
+const orJ=l=>l.length<2?l.join(""):l.slice(0,-1).join(", ")+" or "+l[l.length-1];
+function ctrlText(){const nm=a=>KB[a].map(kName),L=nm("L"),R=nm("R"),out=[];
+ if(L.length===1&&R.length===1)out.push(L[0]+" "+R[0]+" move");else{if(L.length)out.push(orJ(L)+" move left");if(R.length)out.push(orJ(R)+" move right")}
+ for(const[a,t]of[["CW","rotate"],["CCW","rotate back"],["D","soft drop"],["H","hard drop"],["S","hold a piece"]])if(KB[a].length)out.push(orJ(nm(a))+" "+t);
+ return out.join(", ")}
+function refreshCtrlText(){const t=ctrlText();$("#kbtxt").textContent=t;$("#kbtxt2").textContent=t;$("#holdlab").textContent=KB.S.length?"Hold ("+kName(KB.S[0])+")":"Hold";
+ const lg=$("#gplg");lg.textContent="";for(const[a,t]of RACTS){const b=document.createElement("b"),sp=document.createElement("span");b.textContent=GP[a].length?GP[a].map(x=>GPN[x]).join(", "):"Not set";sp.textContent=t;lg.append(b,sp)}}
+const KACT={D:()=>act.D(),CW:()=>rot(1),CCW:()=>rot(-1),H:()=>hard(),S:()=>holdPiece()};
+addEventListener("keydown",e=>{if(remapping)return;if(e.target.tagName==="INPUT"&&e.target.type!=="checkbox")return;
+ const a=keyAct(e.key);
+ if(a&&!over){if(a==="L"||a==="R"){if(!e.repeat)holdStart(a==="L"?-1:1)}else KACT[a]();e.preventDefault()}});
+addEventListener("keyup",e=>{const a=keyAct(e.key);if(hold&&((a==="L"&&hold.dir<0)||(a==="R"&&hold.dir>0)))holdStop()});
 addEventListener("blur",holdStop);
 $("#join").onclick=join;$("#again").onclick=()=>{roundSeed=0;beginRound(startSolo)};$("#tolobby").onclick=backToLobby;
 $("#lstart").onclick=()=>{hostStart()};
@@ -668,5 +701,31 @@ $("#logo").onclick=homeClick;$("#logo").addEventListener("keydown",e=>{if(e.key=
 addEventListener("error",()=>{const n=Date.now();errT=errT.filter(x=>n-x<5000);errT.push(n);if(errT.length>=3&&!gvEl.hidden){errT=[];toLobby(SAD)}});
 $("#lgbtn").onclick=e=>{const b=$("#lg");b.hidden=!b.hidden;renderLog();e.currentTarget.blur()};$("#lgx").onclick=()=>{$("#lg").hidden=true};$("#pcx").onclick=()=>{$("#pcard").hidden=true};addEventListener("keydown",e=>{if(e.key==="Escape")$("#pcard").hidden=true});
 addEventListener("hashchange",()=>{const h=location.hash.slice(1).toLowerCase().replace(/[^a-z0-9]/g,"").slice(0,12);if(h&&cap&&h!==curCode){$("#code").value=h;join()}});
+/* remap panel */
+let rmDev="kb",rmRaf=0;
+function rmStatus(t){$("#rmst").textContent=t||""}
+function rmStop(){remapping=null;cancelAnimationFrame(rmRaf);removeEventListener("keydown",rmKey,true)}
+function rmAssign(a,id){const B=rmDev==="kb"?KB:GP,cap=rmDev==="kb"?4:6,nm=rmDev==="kb"?kName(id):GPN[id];let from="";
+ for(const[o,t]of RACTS){const i=B[o].indexOf(id);if(i>=0&&o!==a){B[o].splice(i,1);from=t}}
+ if(!B[a].includes(id)){if(B[a].length>=cap)B[a].shift();B[a].push(id)}
+ saveB();rmStop();rmRender();refreshCtrlText();rmStatus(nm+" now does "+RACTS.find(x=>x[0]===a)[1].toLowerCase()+(from?" (moved from "+from.toLowerCase()+")":"")+".")}
+function rmKey(e){e.preventDefault();e.stopImmediatePropagation();if(e.repeat)return;if(e.key==="Escape"){rmStop();rmRender();rmStatus("Cancelled.");return}rmAssign(remapping,normK(e.key))}
+function rmPadWait(){const ps=navigator.getGamepads?navigator.getGamepads():[];let p=null;for(const q of ps)if(q&&q.connected){p=q;break}
+ if(p){const cur=[];for(let i=0;i<16;i++)if(p.buttons[i]&&p.buttons[i].pressed)cur.push("b"+i);const ax=p.axes[0]||0,ay=p.axes[1]||0;if(ax<-.6)cur.push("sl");if(ax>.6)cur.push("sr");if(ay>.6)cur.push("sd");if(ay<-.85)cur.push("su");
+  if(rmPadWait.base===null){rmPadWait.base=new Set(cur)}else{const nw=cur.find(x=>!rmPadWait.base.has(x));if(nw){rmAssign(remapping,nw);return}rmPadWait.base=new Set(cur.filter(x=>rmPadWait.base.has(x)))}}
+ rmRaf=requestAnimationFrame(rmPadWait)}
+function rmStart(a){rmStop();remapping=a;holdStop();const t=RACTS.find(x=>x[0]===a)[1];rmRender();
+ if(rmDev==="kb"){rmStatus("Press a key for "+t.toLowerCase()+". Esc cancels.");addEventListener("keydown",rmKey,true)}
+ else{rmStatus("Press a button or push the stick for "+t.toLowerCase()+". Click Cancel to stop.");rmPadWait.base=null;rmRaf=requestAnimationFrame(rmPadWait)}}
+function rmRender(){const L=$("#rmlist");L.textContent="";$("#rmkb").classList.toggle("on",rmDev==="kb");$("#rmgp").classList.toggle("on",rmDev==="gp");const B=rmDev==="kb"?KB:GP;
+ for(const[a,t]of RACTS){const n=document.createElement("b");n.textContent=t;const ch=document.createElement("div");ch.className="ch";
+  B[a].forEach((id,i)=>{const c=document.createElement("span");c.className="chip";c.textContent=rmDev==="kb"?kName(id):GPN[id];const x=document.createElement("button");x.textContent="✕";x.title="Remove";x.setAttribute("aria-label","Remove "+c.textContent+" from "+t);x.onclick=()=>{rmStop();B[a].splice(i,1);saveB();rmRender();refreshCtrlText();rmStatus("")};c.append(x);ch.append(c)});
+  const ad=document.createElement("button");ad.className="alt add"+(remapping===a?" wait":"");ad.textContent=remapping===a?"Cancel":"+ Add";ad.onclick=()=>{if(remapping===a){rmStop();rmRender();rmStatus("Cancelled.")}else rmStart(a)};ch.append(ad);L.append(n,ch)}}
+function rmOpen(dev){rmDev=dev||rmDev;rmStop();rmStatus("");rmRender();$("#remap").hidden=false}
+$("#rmbtn").onclick=()=>rmOpen("kb");$("#gprm").onclick=()=>{$("#gpinfo").hidden=true;rmOpen("gp")};
+$("#rmkb").onclick=()=>rmOpen("kb");$("#rmgp").onclick=()=>rmOpen("gp");
+$("#rmx").onclick=()=>{rmStop();$("#remap").hidden=true};
+$("#rmreset").onclick=()=>{rmStop();if(rmDev==="kb")KB=cloneB(DEF_KB);else GP=cloneB(DEF_GP);saveB();rmRender();refreshCtrlText();rmStatus((rmDev==="kb"?"Keyboard":"Controller")+" controls reset to defaults.")};
+refreshCtrlText();
 sndUi();musicStart();renderLobby();ui();init();requestAnimationFrame(frame);
 </script></body></html>
